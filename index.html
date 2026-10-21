@@ -1,71 +1,385 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-<base target="_top">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>同窓会受付</title>
 <style>
-  body { font-family: sans-serif; padding: 16px; font-size: 18px; }
-  button, a.btn { display: block; width: 100%; margin: 10px 0; padding: 16px;
-    font-size: 20px; border-radius: 10px; border: 1px solid #888;
-    background: #eef; color: #000; text-align: center; text-decoration: none; box-sizing: border-box; }
-  #log { white-space: pre-wrap; background: #f4f4f4; padding: 8px; font-size: 15px; }
-  video { width: 100%; max-height: 240px; background: #000; }
-  input { font-size: 18px; width: 100%; }
+  :root { --bg:#fff; --fg:#111; --sub:#666; --line:#ccc; --btn:#eef1ff; --main:#2b5cd6; --ok:#1b8a3a; --ng:#c62828; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: sans-serif; font-size: 18px; }
+  header { display: flex; position: sticky; top: 0; background: var(--bg); border-bottom: 1px solid var(--line); z-index: 5; }
+  header button { flex: 1; padding: 14px 4px; font-size: 18px; border: 0; background: none; border-bottom: 4px solid transparent; }
+  header button.on { border-bottom-color: var(--main); font-weight: bold; color: var(--main); }
+  section { display: none; padding: 12px 16px 40px; }
+  section.on { display: block; }
+  button.big, label.big { display: block; width: 100%; margin: 10px 0; padding: 16px; font-size: 20px;
+    border: 1px solid #889; border-radius: 10px; background: var(--btn); color: #000; text-align: center; }
+  button.main { background: var(--main); color: #fff; border-color: var(--main); }
+  input[type=text], input[type=url], select { width: 100%; font-size: 18px; padding: 10px; margin: 4px 0 12px; border: 1px solid #999; border-radius: 6px; }
+  .stage { position: relative; width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
+  .stage video, .stage canvas.photo { width: 100%; display: block; }
+  .stage canvas.over { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  #status { font-size: 26px; font-weight: bold; text-align: center; margin: 12px 0; min-height: 1.4em; }
+  #log { white-space: pre-wrap; background: #f4f4f4; padding: 8px; font-size: 14px; max-height: 220px; overflow: auto; }
+  .note { color: var(--sub); font-size: 15px; }
+  .row { display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--line); padding: 8px 0; }
+  .row span { flex: 1; }
+  .row button { padding: 8px 12px; font-size: 16px; }
+  .ok { color: var(--ok); } .ng { color: var(--ng); }
 </style>
 </head>
 <body>
-<h3>受付テスト</h3>
-ロボホンのアドレス
-<input id="ip" value="192.168.0.195">
+<header>
+  <button data-tab="reception" class="on">受付</button>
+  <button data-tab="register">写真から登録</button>
+  <button data-tab="settings">設定</button>
+</header>
 
-<p>① ロボホンに声を出させる（どれで話したか覚えておいてください）</p>
-<button onclick="testA()">A：テスト・エー</button>
-<button onclick="testB()">B：テスト・ビー</button>
-<a class="btn" id="linkC" target="_blank" onclick="setC()">C：テスト・シー（新しいタブが開きます）</a>
+<!-- 受付 -->
+<section id="reception" class="on">
+  <button class="big main" id="startBtn">受付を始める</button>
+  <div class="stage" id="liveStage" hidden>
+    <video id="video" autoplay playsinline muted></video>
+    <canvas class="over" id="liveOver"></canvas>
+  </div>
+  <div id="status"></div>
+  <button class="big" id="flipBtn" hidden>カメラを切り替える（前／後ろ）</button>
+  <button class="big" id="stopBtn" hidden>受付を止める</button>
+  <div id="unknownBox" hidden>
+    <p>名前が名簿に見つかりません。聞き取った言葉：<b id="heard"></b></p>
+    <select id="pickName"></select>
+    <button class="big main" id="pickOk">この人で受付する</button>
+    <button class="big" id="pickRetry">もう一度聞く</button>
+    <button class="big" id="pickCancel">やめる</button>
+  </div>
+  <div id="log"></div>
+</section>
 
-<p>② カメラ</p>
-<button onclick="testCam()">カメラを試す</button>
-<video id="v" autoplay playsinline muted></video>
+<!-- 写真から登録 -->
+<section id="register">
+  <p class="note">Googleフォトなどから、その人がはっきり写った写真を選びます。1人につき2〜3枚登録すると見分けやすくなります。</p>
+  <label class="big main">写真を選ぶ<input type="file" id="photoInput" accept="image/*" hidden></label>
+  <div class="stage" id="photoStage" hidden>
+    <canvas class="photo" id="photoCanvas"></canvas>
+  </div>
+  <p id="photoMsg" class="note"></p>
+  <div id="photoForm" hidden>
+    名前（名簿から選ぶ）
+    <select id="regName"></select>
+    <button class="big main" id="regBtn">この顔を登録する</button>
+  </div>
+  <h3>登録済み</h3>
+  <div id="faceList"></div>
+</section>
 
-<p>③ 音声認識（ボタンを押して名前を言ってください）</p>
-<button onclick="testMic()">聞き取りを試す</button>
+<!-- 設定 -->
+<section id="settings">
+  <p class="note">この内容はこの携帯の中だけに保存されます。</p>
+  GASのURL（/exec で終わる）
+  <input type="url" id="gasUrl" placeholder="https://script.google.com/macros/s/…/exec">
+  合言葉
+  <input type="text" id="gasKey" autocomplete="off">
+  ロボホンのアドレス
+  <input type="text" id="robohonIp" value="192.168.0.195">
+  <label><input type="checkbox" id="barkOn" checked> 受付のときにアイボを鳴かせる</label>
+  <button class="big main" id="saveBtn">保存して、つながるか確かめる</button>
+  <p id="setMsg"></p>
+</section>
 
-<div id="log"></div>
-
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script>
-function log(s){ document.getElementById('log').textContent += s + '\n'; }
-function url(word){
-  var ip = document.getElementById('ip').value.trim();
-  return 'http://' + ip + ':18001/speech/1/' + encodeURIComponent(word);
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
+const MATCH_DISTANCE = 0.5;      // これより近ければ同じ人
+const REPEAT_MS = 3 * 60 * 1000; // 同じ人を続けて受付しない時間
+const $ = id => document.getElementById(id);
+
+// ---- 保存（この携帯の中だけ） ----
+function load(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; } }
+let settings = load('uketsuke_settings', { gasUrl: '', key: '', robohonIp: '192.168.0.195', bark: true });
+let faces = load('uketsuke_faces', []);   // [{name, kana, d:[128]}]
+let roster = load('uketsuke_roster', []); // [{name, kana}]
+
+function log(s) { const el = $('log'); el.textContent = new Date().toLocaleTimeString() + ' ' + s + '\n' + el.textContent; }
+function status(s, cls) { const el = $('status'); el.textContent = s; el.className = cls || ''; }
+const plain = s => String(s || '').replace(/[\s　]/g, '');
+const toHira = s => String(s || '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+const kanaOf = name => (roster.find(r => plain(r.name) === plain(name)) || {}).kana || '';
+
+// ---- タブ ----
+document.querySelectorAll('header button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+function showTab(t) {
+  document.querySelectorAll('header button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === t));
+  if (t === 'register') { fillNames($('regName')); drawFaceList(); }
 }
-function testA(){
-  fetch(url('テスト、エー'), {mode:'no-cors'})
-    .then(function(){ log('A: 送信しました'); })
-    .catch(function(e){ log('A: 失敗 ' + e); });
+
+// ---- 設定 ----
+$('gasUrl').value = settings.gasUrl; $('gasKey').value = settings.key;
+$('robohonIp').value = settings.robohonIp; $('barkOn').checked = settings.bark !== false;
+$('saveBtn').onclick = async () => {
+  settings = { gasUrl: $('gasUrl').value.trim(), key: $('gasKey').value.trim(), robohonIp: $('robohonIp').value.trim(), bark: $('barkOn').checked };
+  save('uketsuke_settings', settings);
+  $('setMsg').textContent = '確かめています…';
+  try {
+    await loadRoster();
+    $('setMsg').innerHTML = '<span class="ok">つながりました。名簿 ' + roster.length + ' 人を読み込みました。</span>';
+  } catch (e) { $('setMsg').innerHTML = '<span class="ng">' + e.message + '</span>'; }
+};
+if (!settings.gasUrl || !settings.key) showTab('settings');
+
+// ---- GAS ----
+async function loadRoster() {
+  if (!settings.gasUrl || !settings.key) throw new Error('GASのURLと合言葉を入れてください');
+  const r = await fetch(settings.gasUrl + '?action=roster&key=' + encodeURIComponent(settings.key));
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || '読み込めませんでした');
+  roster = j.roster; save('uketsuke_roster', roster);
+  return roster;
 }
-function testB(){
-  var img = new Image();
-  img.onload = img.onerror = function(){ log('B: 送信しました'); };
-  img.src = url('テスト、ビー') + '?t=' + Date.now();
+async function postCheckin(name, method) {
+  const r = await fetch(settings.gasUrl, { method: 'POST',
+    body: JSON.stringify({ action: 'checkin', key: settings.key, name: name, method: method, bark: settings.bark !== false }) });
+  return r.json();
 }
-function setC(){
-  document.getElementById('linkC').href = url('テスト、シー');
-  log('C: タブを開きました');
+
+// ---- ロボホン ----
+function robohonUrl(path) { return 'http://' + settings.robohonIp + ':18001/' + path; }
+async function robohonSay(text) {
+  await fetch(robohonUrl('speech/1/' + encodeURIComponent(text)), { mode: 'no-cors' });
+  await waitRobohon();
 }
-function testCam(){
-  if (!navigator.mediaDevices) { log('カメラ: 使えません（mediaDevices なし）'); return; }
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}})
-    .then(function(s){ document.getElementById('v').srcObject = s; log('カメラ: OK'); })
-    .catch(function(e){ log('カメラ: 失敗 ' + e.name + ' ' + e.message); });
+async function waitRobohon() {
+  // 話し終わるまで待つ（/poll の1行目が _busy の間は話している）
+  const end = Date.now() + 20000;
+  await sleep(800);
+  while (Date.now() < end) {
+    try {
+      const t = await (await fetch(robohonUrl('poll'))).text();
+      if (!/_busy/.test(t.split('\n')[0])) return;
+    } catch (e) { await sleep(3000); return; }
+    await sleep(500);
+  }
 }
-function testMic(){
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { log('音声認識: 使えません'); return; }
-  var r = new SR(); r.lang = 'ja-JP';
-  r.onresult = function(e){ log('音声認識: 「' + e.results[0][0].transcript + '」'); };
-  r.onerror = function(e){ log('音声認識: 失敗 ' + e.error); };
-  r.start(); log('音声認識: 聞いています…');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ---- 顔の部品 ----
+let modelsReady = null;
+function loadModels() {
+  if (!modelsReady) {
+    modelsReady = Promise.all([
+      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+    ]);
+  }
+  return modelsReady;
 }
+function bestMatch(desc) {
+  let best = null, bestD = 9;
+  for (const f of faces) {
+    const d = faceapi.euclideanDistance(desc, f.d);
+    if (d < bestD) { bestD = d; best = f; }
+  }
+  return { face: bestD < MATCH_DISTANCE ? best : null, distance: bestD };
+}
+
+// ---- 写真から登録 ----
+let photoFaces = [], chosen = -1, photoImg = null;
+function fillNames(sel) {
+  sel.innerHTML = roster.length ? '' : '<option value="">（名簿がありません。設定で読み込んでください）</option>';
+  roster.forEach(r => { const o = document.createElement('option'); o.value = r.name; o.textContent = r.name + (r.kana ? '（' + r.kana + '）' : ''); sel.appendChild(o); });
+}
+$('photoInput').onchange = async e => {
+  const file = e.target.files[0]; if (!file) return;
+  $('photoMsg').textContent = '顔をさがしています…（初回は部品の読み込みに少しかかります）';
+  $('photoForm').hidden = true;
+  await loadModels();
+  photoImg = await faceapi.bufferToImage(file);
+  const cv = $('photoCanvas');
+  const scale = Math.min(1, 1200 / Math.max(photoImg.width, photoImg.height));
+  cv.width = Math.round(photoImg.width * scale); cv.height = Math.round(photoImg.height * scale);
+  cv.getContext('2d').drawImage(photoImg, 0, 0, cv.width, cv.height);
+  $('photoStage').hidden = false;
+  photoFaces = await faceapi.detectAllFaces(cv, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 })).withFaceLandmarks().withFaceDescriptors();
+  chosen = photoFaces.length === 1 ? 0 : -1;
+  drawPhoto();
+  if (!photoFaces.length) $('photoMsg').textContent = '顔が見つかりませんでした。正面に近い、明るい写真を選んでください。';
+  else if (photoFaces.length === 1) { $('photoMsg').textContent = '顔が1つ見つかりました。名前を選んで登録してください。'; showForm(); }
+  else $('photoMsg').textContent = '顔が ' + photoFaces.length + ' つ見つかりました。登録する人の顔を押してください。';
+  e.target.value = '';
+};
+$('photoCanvas').onclick = ev => {
+  if (photoFaces.length < 2) return;
+  const cv = $('photoCanvas'), rect = cv.getBoundingClientRect();
+  const x = (ev.clientX - rect.left) * cv.width / rect.width, y = (ev.clientY - rect.top) * cv.height / rect.height;
+  const i = photoFaces.findIndex(f => { const b = f.detection.box; return x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height; });
+  if (i >= 0) { chosen = i; drawPhoto(); $('photoMsg').textContent = '選んだ顔の名前を選んで登録してください。'; showForm(); }
+};
+function drawPhoto() {
+  const cv = $('photoCanvas'), ctx = cv.getContext('2d');
+  ctx.drawImage(photoImg, 0, 0, cv.width, cv.height);
+  photoFaces.forEach((f, i) => {
+    const b = f.detection.box;
+    ctx.lineWidth = Math.max(3, cv.width / 200);
+    ctx.strokeStyle = i === chosen ? '#00e000' : '#ffcc00';
+    ctx.strokeRect(b.x, b.y, b.width, b.height);
+  });
+}
+function showForm() { fillNames($('regName')); $('photoForm').hidden = false; }
+$('regBtn').onclick = () => {
+  const name = $('regName').value;
+  if (chosen < 0 || !name) return;
+  const d = Array.from(photoFaces[chosen].descriptor, v => Math.round(v * 10000) / 10000);
+  faces.push({ name: name, kana: kanaOf(name), d: d });
+  if (!save('uketsuke_faces', faces)) { alert('保存できませんでした'); return; }
+  $('photoMsg').innerHTML = '<span class="ok">' + name + ' さんを登録しました。</span>';
+  $('photoForm').hidden = true;
+  drawFaceList();
+};
+function drawFaceList() {
+  const box = $('faceList'); box.innerHTML = '';
+  const count = {};
+  faces.forEach(f => count[f.name] = (count[f.name] || 0) + 1);
+  const names = Object.keys(count);
+  if (!names.length) { box.innerHTML = '<p class="note">まだ登録はありません。</p>'; return; }
+  names.forEach(n => {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = '<span>' + n + '　写真 ' + count[n] + ' 枚</span>';
+    const del = document.createElement('button'); del.textContent = '消す';
+    del.onclick = () => { if (confirm(n + ' さんの登録を消しますか？')) { faces = faces.filter(f => f.name !== n); save('uketsuke_faces', faces); drawFaceList(); } };
+    row.appendChild(del); box.appendChild(row);
+  });
+}
+
+// ---- 受付 ----
+let stream = null, facing = 'environment', running = false, busy = false, timer = null;
+const lastSeen = {};   // name -> 受付した時刻
+let unknownSince = 0, pendingDesc = null;
+
+$('startBtn').onclick = startReception;
+$('stopBtn').onclick = stopReception;
+$('flipBtn').onclick = async () => { facing = facing === 'environment' ? 'user' : 'environment'; await openCamera(); };
+
+async function startReception() {
+  if (!settings.gasUrl || !settings.key) { showTab('settings'); return; }
+  status('準備しています…');
+  try { await loadRoster(); } catch (e) { log('名簿: ' + e.message + '（前に読み込んだ名簿を使います）'); }
+  await loadModels();
+  await openCamera();
+  $('startBtn').hidden = true; $('liveStage').hidden = false; $('flipBtn').hidden = false; $('stopBtn').hidden = false;
+  running = true; status('お客様をお待ちしています');
+  loop();
+}
+function stopReception() {
+  running = false; clearTimeout(timer);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  $('startBtn').hidden = false; $('liveStage').hidden = true; $('flipBtn').hidden = true; $('stopBtn').hidden = true;
+  status('');
+}
+async function openCamera() {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 640 } }, audio: false });
+  $('video').srcObject = stream;
+  await new Promise(r => $('video').onloadedmetadata = r);
+}
+async function loop() {
+  if (!running) return;
+  if (!busy) {
+    try { await checkFrame(); } catch (e) { log('見分けのエラー: ' + e.message); }
+  }
+  timer = setTimeout(loop, 600);
+}
+async function checkFrame() {
+  const v = $('video');
+  const det = await faceapi.detectSingleFace(v, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+    .withFaceLandmarks().withFaceDescriptor();
+  const over = $('liveOver'), ctx = over.getContext('2d');
+  over.width = v.videoWidth; over.height = v.videoHeight;
+  ctx.clearRect(0, 0, over.width, over.height);
+  if (!det || det.detection.box.width < v.videoWidth * 0.12) { unknownSince = 0; return; }   // 顔がない／遠い
+  const b = det.detection.box, m = bestMatch(det.descriptor);
+  ctx.lineWidth = 4; ctx.strokeStyle = m.face ? '#00e000' : '#ffcc00'; ctx.strokeRect(b.x, b.y, b.width, b.height);
+  if (m.face) {
+    unknownSince = 0;
+    const t = lastSeen[m.face.name] || 0;
+    if (Date.now() - t > REPEAT_MS) await greet(m.face.name, '顔', null);
+    return;
+  }
+  // 知らない顔：2秒続いたら名前を聞く
+  if (!unknownSince) { unknownSince = Date.now(); return; }
+  if (Date.now() - unknownSince > 2000) { unknownSince = 0; await askName(det.descriptor); }
+}
+
+async function greet(name, method, newDesc) {
+  busy = true;
+  lastSeen[name] = Date.now();
+  const kana = kanaOf(name) || name;
+  status(name + ' 様', 'ok');
+  log('受付: ' + name + '（' + method + '）');
+  try {
+    // ロボホンの挨拶とアイボ・受付簿を同時に始める
+    const gas = postCheckin(name, method).then(j => log('受付簿: ' + (j.ok ? j.count + '回目' : j.error) + (j.aibo ? ' / アイボ: ' + j.aibo : '')))
+      .catch(e => log('受付簿のエラー: ' + e.message));
+    await robohonSay(kana + '様ですね。今日は同窓会で、きゅうこうを、お深めください。');
+    await gas;
+    if (newDesc) {
+      faces.push({ name: name, kana: kanaOf(name), d: Array.from(newDesc, v => Math.round(v * 10000) / 10000) });
+      save('uketsuke_faces', faces);
+      log(name + ' さんの顔を覚えました');
+    }
+  } finally {
+    await sleep(1500);
+    status('お客様をお待ちしています'); busy = false;
+  }
+}
+
+function listenOnce() {
+  return new Promise(resolve => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { resolve(''); return; }
+    const r = new SR(); r.lang = 'ja-JP'; r.maxAlternatives = 3;
+    let done = false;
+    r.onresult = e => { done = true; resolve(Array.from(e.results[0]).map(a => a.transcript).join('|')); };
+    r.onerror = () => { if (!done) { done = true; resolve(''); } };
+    r.onend = () => { if (!done) { done = true; resolve(''); } };
+    r.start();
+  });
+}
+function findInRoster(heard) {
+  const alts = heard.split('|').map(s => toHira(plain(s)).replace(/(です|でございます|と申します|ともうします|様|さま|さん)/g, ''));
+  for (const a of alts) {
+    if (a.length < 2) continue;
+    const hit = roster.find(r => { const n = plain(r.name), k = toHira(plain(r.kana)); return (n && (a.includes(n) || n.includes(a))) || (k && (a.includes(k) || k.includes(a))); });
+    if (hit) return hit.name;
+  }
+  return '';
+}
+async function askName(desc) {
+  busy = true;
+  status('お名前をうかがっています…');
+  try {
+    await robohonSay('いらっしゃいませ。お名前を、フルネームで教えてください。');
+    const heard = await listenOnce();
+    log('聞き取り: ' + (heard || '（聞き取れませんでした）'));
+    const name = findInRoster(heard);
+    if (name) { busy = false; await greet(name, '名前', desc); return; }
+    // 名簿にない → 画面で選んでもらう
+    pendingDesc = desc;
+    $('heard').textContent = heard.split('|')[0] || '（聞き取れませんでした）';
+    fillNames($('pickName'));
+    $('unknownBox').hidden = false;
+    status('名前を選んでください', 'ng');
+    await robohonSay('ごめんなさい、うまく聞き取れませんでした。係の方、画面で選んでください。');
+  } catch (e) { log('名前を聞くときのエラー: ' + e.message); busy = false; }
+}
+$('pickOk').onclick = async () => { $('unknownBox').hidden = true; busy = false; await greet($('pickName').value, '係が選択', pendingDesc); };
+$('pickRetry').onclick = async () => { $('unknownBox').hidden = true; busy = false; await askName(pendingDesc); };
+$('pickCancel').onclick = () => { $('unknownBox').hidden = true; status('お客様をお待ちしています'); busy = false; };
+
+drawFaceList();
 </script>
 </body>
 </html>
