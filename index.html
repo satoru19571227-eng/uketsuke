@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  body { font-family: sans-serif; padding: 16px; font-size: 18px; }
+  button, a.btn { display: block; width: 100%; margin: 10px 0; padding: 16px;
+    font-size: 20px; border-radius: 10px; border: 1px solid #888;
+    background: #eef; color: #000; text-align: center; text-decoration: none; box-sizing: border-box; }
+  #log { white-space: pre-wrap; background: #f4f4f4; padding: 8px; font-size: 15px; }
+  video { width: 100%; max-height: 240px; background: #000; }
+  input { font-size: 18px; width: 100%; }
+</style>
+</head>
+<body>
+<h3>受付テスト</h3>
+ロボホンのアドレス
+<input id="ip" value="192.168.0.195">
+
+<p>① ロボホンに声を出させる（どれで話したか覚えておいてください）</p>
+<button onclick="testA()">A：テスト・エー</button>
+<button onclick="testB()">B：テスト・ビー</button>
+<a class="btn" id="linkC" target="_blank" onclick="setC()">C：テスト・シー（新しいタブが開きます）</a>
+
+<p>② カメラ</p>
+<button onclick="testCam()">カメラを試す</button>
+<video id="v" autoplay playsinline muted></video>
+
+<p>③ 音声認識（ボタンを押して名前を言ってください）</p>
+<button onclick="testMic()">聞き取りを試す</button>
+
+<div id="log"></div>
+
+<script>
+function log(s){ document.getElementById('log').textContent += s + '\n'; }
+function url(word){
+  var ip = document.getElementById('ip').value.trim();
+  return 'http://' + ip + ':18001/speech/1/' + encodeURIComponent(word);
+}
+function testA(){
+  fetch(url('テスト、エー'), {mode:'no-cors'})
+    .then(function(){ log('A: 送信しました'); })
+    .catch(function(e){ log('A: 失敗 ' + e); });
+}
+function testB(){
+  var img = new Image();
+  img.onload = img.onerror = function(){ log('B: 送信しました'); };
+  img.src = url('テスト、ビー') + '?t=' + Date.now();
+}
+function setC(){
+  document.getElementById('linkC').href = url('テスト、シー');
+  log('C: タブを開きました');
+}
+function testCam(){
+  if (!navigator.mediaDevices) { log('カメラ: 使えません（mediaDevices なし）'); return; }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}})
+    .then(function(s){ document.getElementById('v').srcObject = s; log('カメラ: OK'); })
+    .catch(function(e){ log('カメラ: 失敗 ' + e.name + ' ' + e.message); });
+}
+function testMic(){
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { log('音声認識: 使えません'); return; }
+  var r = new SR(); r.lang = 'ja-JP';
+  r.onresult = function(e){ log('音声認識: 「' + e.results[0][0].transcript + '」'); };
+  r.onerror = function(e){ log('音声認識: 失敗 ' + e.error); };
+  r.start(); log('音声認識: 聞いています…');
+}
+</script>
+</body>
+</html>
