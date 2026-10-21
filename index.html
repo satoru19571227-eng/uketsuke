@@ -85,6 +85,11 @@
   <label><input type="checkbox" id="barkOn" checked> 受付のときにアイボを鳴かせる</label>
   <button class="big main" id="saveBtn">保存して、つながるか確かめる</button>
   <p id="setMsg"></p>
+  <h3>アイボ</h3>
+  <p class="note">受付の前に「座らせて待機」を押すと、アイボは歩き回らずに座って待ちます。終わったら「普通に戻す」を押してください。</p>
+  <button class="big" id="aiboReadyBtn">アイボを座らせて待機</button>
+  <button class="big" id="aiboNormalBtn">アイボを普通に戻す</button>
+  <p id="aiboMsg"></p>
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
@@ -143,6 +148,18 @@ async function postCheckin(name, method) {
     body: JSON.stringify({ action: 'checkin', key: settings.key, name: name, method: method, bark: settings.bark !== false }) });
   return r.json();
 }
+
+async function aiboCommand(action, label) {
+  if (!settings.gasUrl || !settings.key) { $('aiboMsg').textContent = '先にGASのURLと合言葉を保存してください'; return; }
+  $('aiboMsg').textContent = label + 'を送っています…（数秒かかります）';
+  try {
+    const r = await fetch(settings.gasUrl, { method: 'POST', body: JSON.stringify({ action: action, key: settings.key }) });
+    const j = await r.json();
+    $('aiboMsg').innerHTML = j.ok ? '<span class="ok">' + label + '：' + j.aibo + '</span>' : '<span class="ng">' + j.error + '</span>';
+  } catch (e) { $('aiboMsg').innerHTML = '<span class="ng">' + e.message + '</span>'; }
+}
+$('aiboReadyBtn').onclick = () => aiboCommand('aiboReady', '座らせて待機');
+$('aiboNormalBtn').onclick = () => aiboCommand('aiboNormal', '普通に戻す');
 
 // ---- ロボホン ----
 function robohonUrl(path) { return 'http://' + settings.robohonIp + ':18001/' + path; }
@@ -270,6 +287,7 @@ async function startReception() {
   await loadModels();
   await openCamera();
   $('startBtn').hidden = true; $('liveStage').hidden = false; $('flipBtn').hidden = false; $('stopBtn').hidden = false;
+  for (const n in lastSeen) delete lastSeen[n];   // 始め直したら、続けて受付しない時間を消す
   running = true; status('お客様をお待ちしています');
   loop();
 }
@@ -299,13 +317,14 @@ async function checkFrame() {
   const over = $('liveOver'), ctx = over.getContext('2d');
   over.width = v.videoWidth; over.height = v.videoHeight;
   ctx.clearRect(0, 0, over.width, over.height);
-  if (!det || det.detection.box.width < v.videoWidth * 0.12) { unknownSince = 0; return; }   // 顔がない／遠い
+  if (!det || det.detection.box.width < v.videoWidth * 0.12) { unknownSince = 0; status('お客様をお待ちしています'); return; }   // 顔がない／遠い
   const b = det.detection.box, m = bestMatch(det.descriptor);
   ctx.lineWidth = 4; ctx.strokeStyle = m.face ? '#00e000' : '#ffcc00'; ctx.strokeRect(b.x, b.y, b.width, b.height);
   if (m.face) {
     unknownSince = 0;
     const t = lastSeen[m.face.name] || 0;
     if (Date.now() - t > REPEAT_MS) await greet(m.face.name, '顔', null);
+    else status(m.face.name + ' 様は受付済みです');
     return;
   }
   // 知らない顔：2秒続いたら名前を聞く
