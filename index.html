@@ -265,10 +265,32 @@ function drawFaceList() {
   names.forEach(n => {
     const row = document.createElement('div'); row.className = 'row';
     row.innerHTML = '<span>' + n + '　写真 ' + count[n] + ' 枚</span>';
+    const ren = document.createElement('button'); ren.textContent = '名前を変える';
+    ren.onclick = () => showRename(row, n);
     const del = document.createElement('button'); del.textContent = '消す';
     del.onclick = () => { if (confirm(n + ' さんの登録を消しますか？')) { faces = faces.filter(f => f.name !== n); save('uketsuke_faces', faces); drawFaceList(); } };
-    row.appendChild(del); box.appendChild(row);
+    row.appendChild(ren); row.appendChild(del); box.appendChild(row);
   });
+}
+// 覚えた顔の名前を、名簿の別の名前に付け替える（特別参加者 → 本当の名前 など）
+function showRename(row, oldName) {
+  const box = document.createElement('div'); box.style.width = '100%';
+  const sel = document.createElement('select'); fillNames(sel);
+  const ok = document.createElement('button'); ok.className = 'big main'; ok.textContent = 'この名前に変える';
+  const cancel = document.createElement('button'); cancel.className = 'big'; cancel.textContent = 'やめる';
+  box.innerHTML = '<p class="note">新しい名前を名簿から選んでください（名簿にない名前は、先にスプレッドシートの「名簿」に足して、「設定」で読み込み直してください）。</p>';
+  box.appendChild(sel); box.appendChild(ok); box.appendChild(cancel);
+  row.style.flexWrap = 'wrap'; row.appendChild(box);
+  cancel.onclick = () => drawFaceList();
+  ok.onclick = () => {
+    const newName = sel.value;
+    if (!newName || newName === oldName) { drawFaceList(); return; }
+    faces.forEach(f => { if (f.name === oldName) { f.name = newName; f.kana = kanaOf(newName); } });
+    save('uketsuke_faces', faces);
+    delete lastSeen[oldName];
+    drawFaceList();
+    $('photoMsg').innerHTML = '<span class="ok">' + oldName + ' を ' + newName + ' に変えました。受付簿にすでに記録された名前は、スプレッドシートで書き換えてください。</span>';
+  };
 }
 
 // ---- 受付 ----
