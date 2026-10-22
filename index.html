@@ -297,6 +297,8 @@ function showRename(row, oldName) {
 let stream = null, facing = 'environment', running = false, busy = false, timer = null;
 const lastSeen = {};   // name -> 受付した時刻
 let unknownSince = 0, pendingDesc = null;
+const SAME_NEEDED = 3;           // 同じ人と何回続けて判断されたら挨拶するか
+let sameName = '', sameCount = 0;
 
 $('startBtn').onclick = startReception;
 $('stopBtn').onclick = stopReception;
@@ -339,16 +341,20 @@ async function checkFrame() {
   const over = $('liveOver'), ctx = over.getContext('2d');
   over.width = v.videoWidth; over.height = v.videoHeight;
   ctx.clearRect(0, 0, over.width, over.height);
-  if (!det || det.detection.box.width < v.videoWidth * 0.12) { unknownSince = 0; status('お客様をお待ちしています'); return; }   // 顔がない／遠い
+  if (!det || det.detection.box.width < v.videoWidth * 0.12) { unknownSince = 0; sameName = ''; sameCount = 0; status('お客様をお待ちしています'); return; }   // 顔がない／遠い
   const b = det.detection.box, m = bestMatch(det.descriptor);
   ctx.lineWidth = 4; ctx.strokeStyle = m.face ? '#00e000' : '#ffcc00'; ctx.strokeRect(b.x, b.y, b.width, b.height);
   if (m.face) {
     unknownSince = 0;
+    // たまたまの取り違えを防ぐため、同じ人と続けて判断されたときだけ挨拶する
+    if (m.face.name === sameName) sameCount++; else { sameName = m.face.name; sameCount = 1; }
+    if (sameCount < SAME_NEEDED) return;
     const t = lastSeen[m.face.name] || 0;
-    if (Date.now() - t > REPEAT_MS) await greet(m.face.name, '顔', null);
+    if (Date.now() - t > REPEAT_MS) { sameName = ''; sameCount = 0; await greet(m.face.name, '顔', null); }
     else status(m.face.name + ' 様は受付済みです');
     return;
   }
+  sameName = ''; sameCount = 0;
   // 知らない顔：2秒続いたら名前を聞く
   if (!unknownSince) { unknownSince = Date.now(); return; }
   if (Date.now() - unknownSince > 2000) { unknownSince = 0; await askName(det.descriptor); }
