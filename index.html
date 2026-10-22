@@ -364,7 +364,7 @@ async function greet(name, method, newDesc) {
     // ロボホンの挨拶とアイボ・受付簿を同時に始める
     const gas = postCheckin(name, method).then(j => log('受付簿: ' + (j.ok ? j.count + '回目' : j.error) + (j.aibo ? ' / アイボ: ' + j.aibo : '')))
       .catch(e => log('受付簿のエラー: ' + e.message));
-    await robohonSay(kana + '様ですね。今日は同窓会で、きゅうこうを、お深めください。');
+    await robohonSay(kana + 'さまですね。今日は同窓会で、きゅうこうを、お深めください。');   // 「様」は「よう」と読まれるので、ひらがなで
     await gas;
     if (newDesc) {
       faces.push({ name: name, kana: kanaOf(name), d: Array.from(newDesc, v => Math.round(v * 10000) / 10000) });
