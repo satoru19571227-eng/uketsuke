@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>aibo かんたん声リモコン</title>
+<link rel="manifest" href="aibo-manifest.json">
+<link rel="icon" href="aibo-icon-192.png">
+<link rel="apple-touch-icon" href="aibo-icon-192.png">
+<meta name="theme-color" content="#3b82f6">
 <style>
   body { font-family: "Meiryo", sans-serif; background: #f0f8ff; text-align: center; padding: 16px; margin: 0; }
   .card { background: white; max-width: 500px; margin: 0 auto 16px; padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border: 3px solid #4682b4; }
@@ -76,6 +80,7 @@
 </div>
 
 <script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("aibo-sw.js", { scope: "aibo.html" }).catch(() => {});
 const BASE = "https://public.api.aibo.com/v1";
 const statusBox = document.getElementById("status");
 const micBtn = document.getElementById("micBtn");
