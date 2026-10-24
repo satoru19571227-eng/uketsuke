@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>aibo みんなで踊る</title>
+<link rel="manifest" href="aibo-duet-manifest.json">
+<link rel="icon" href="aibo-duet-icon-192.png">
+<link rel="apple-touch-icon" href="aibo-duet-icon-192.png">
+<meta name="theme-color" content="#db2777">
+<style>
+  body { font-family: "Meiryo", sans-serif; background: #fdf2f8; text-align: center; padding: 16px; margin: 0; }
+  .card { background: white; max-width: 500px; margin: 0 auto 16px; padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border: 3px solid #db2777; }
+  h1 { color: #9d174d; font-size: 24px; margin-top: 0; }
+  h2 { color: #9d174d; font-size: 20px; margin: 0 0 10px; }
+  .status-box { font-size: 17px; font-weight: bold; color: #333; min-height: 60px; background: #f8f9fa; border-radius: 12px; padding: 15px; margin: 15px 0; border: 1px solid #ddd; text-align: left; line-height: 1.6; }
+  #status { position: sticky; top: 8px; z-index: 5; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+  .sub-btn { font-size: 17px; padding: 14px 6px; border-radius: 12px; border: none; background: #db2777; color: white; font-weight: bold; cursor: pointer; }
+  .sub-btn.gray { background: #64748b; }
+  .sub-btn.blue { background: #3b82f6; }
+  .sub-btn:disabled { opacity: 0.5; }
+  input, select { width: 100%; box-sizing: border-box; font-size: 16px; padding: 10px; margin: 4px 0 12px; border: 1px solid #999; border-radius: 8px; }
+  label { display: block; text-align: left; font-weight: bold; color: #333; }
+  .note { font-size: 14px; color: #555; text-align: left; line-height: 1.6; }
+  .ok { color: #1b8a3a; } .ng { color: #c62828; }
+  .aibo-list label { font-size: 20px; padding: 10px; border: 2px solid #f9a8d4; border-radius: 12px; margin: 8px 0; display: flex; align-items: center; gap: 12px; }
+  .aibo-list input { width: 28px; height: 28px; margin: 0; }
+  .check { display: flex; align-items: center; gap: 10px; font-weight: normal; }
+  .check input { width: 22px; height: 22px; margin: 0; }
+  details { text-align: left; }
+  summary { font-size: 18px; font-weight: bold; color: #9d174d; cursor: pointer; }
+  ol { padding-left: 22px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>💃 aibo みんなで踊る</h1>
+  <p class="note">チェックしたアイボ<b>全員に、同じ命令を同時に</b>送ります。インターネットの都合で、<b>動き出しが1〜2秒ずれる</b>ことがあります。</p>
+  <div id="status" class="status-box">はじめに、下の「設定」でアクセストークンを入れて、アイボを探してください</div>
+
+  <h2>🐕 踊るアイボ</h2>
+  <div id="aiboList" class="aibo-list"><p class="note">（設定で「アイボを探す」を押すと、ここに出ます）</p></div>
+  <label class="check"><input type="checkbox" id="countdown" checked> 送る前に「いち、に、さん」と数える</label>
+
+  <h2 style="margin-top:20px">🎶 曲つきのふるまい</h2>
+  <p class="note">それぞれのアイボが<b>覚えている</b>ふるまいだけ動きます。</p>
+  <div class="grid" id="tricks"></div>
+
+  <h2 style="margin-top:20px">🐾 そのほか</h2>
+  <div class="grid">
+    <button class="sub-btn blue" onclick="sendAll('ダンス', 'play_motion', { Category: 'dance', Mode: 'NONE' })">💃 ダンス</button>
+    <button class="sub-btn blue" onclick="sendAll('歌う', 'play_motion', { Category: 'sing', Mode: 'NONE' })">🎵 歌う</button>
+    <button class="sub-btn blue" onclick="sendAll('万歳', 'play_motion', { Category: 'handsUp', Mode: 'NONE' })">🙌 万歳</button>
+    <button class="sub-btn blue" onclick="sendAll('喜ぶ', 'play_motion', { Category: 'overJoyed', Mode: 'NONE' })">😊 喜ぶ</button>
+    <button class="sub-btn blue" onclick="sendAll('ワンと鳴く', 'play_motion', { Category: 'bark', Mode: 'NONE' })">🔊 ワンと鳴く</button>
+    <button class="sub-btn blue" onclick="sendAll('体を揺らす', 'play_motion', { Category: 'swing', Mode: 'NONE' })">〰️ 体を揺らす</button>
+    <button class="sub-btn blue" onclick="sendAll('立つ', 'change_posture', { FinalPosture: 'stand' })">🐕 立つ</button>
+    <button class="sub-btn blue" onclick="sendAll('おすわり', 'change_posture', { FinalPosture: 'sit' })">🪑 おすわり</button>
+  </div>
+  <p class="note" style="margin-top:16px">踊る前に「立つ」をそろえておくと、始まりがそろいやすくなります。<b>1つ押したら、全員が終わるまで待ってから</b>次を押してください。</p>
+</div>
+
+<div class="card">
+  <h2>⚙️ 設定（最初に1回だけ）</h2>
+  <p class="note">ここに入れた内容は、<b>この携帯の中だけ</b>に保存されます。ほかの人には見えません。1つのアカウントに登録されているアイボは、1つのトークンで全部動かせます。</p>
+  <label for="token">あなたのアクセストークン</label>
+  <input id="token" type="password" autocomplete="off" placeholder="eyJ… で始まる長い文字">
+  <button class="sub-btn gray" style="width:100%" onclick="findAibo()">🔍 アイボを探す</button>
+  <p id="setMsg" class="note"></p>
+</div>
+
+<div class="card">
+  <details>
+    <summary>📖 アクセストークンの取り方</summary>
+    <ol class="note">
+      <li>パソコンかスマホで <b>aibo Developer Site</b>（https://developer.aibo.com/jp/）を開く</li>
+      <li>aibo のアプリで使っているアカウントでログインする</li>
+      <li>「<b>アクセストークン</b>」の項目で、アクセストークンを生成する</li>
+      <li>表示された長い文字（eyJ… で始まる）を<b>全部コピー</b>して、上の「あなたのアクセストークン」に貼り付ける</li>
+      <li>「アイボを探す」を押すと、そのアカウントのアイボが全部出てきます</li>
+    </ol>
+    <p class="note">
+      ※ アクセストークンには<b>有効期限</b>があります。急に動かなくなったら、作り直して貼り付け直してください。<br>
+      ※ アクセストークンは、<b>人に教えないでください</b>（教えると、その人があなたのアイボを動かせてしまいます）。
+    </p>
+  </details>
+</div>
+
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("aibo-sw.js", { scope: "aibo-duet.html" }).catch(() => {});
+const BASE = "https://public.api.aibo.com/v1";
+const statusBox = document.getElementById("status");
+function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+function store(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+// トークンはほかのアイボリモコンと同じ場所に保存する（同じ携帯なら入れ直し不要）
+let TOKEN = load("aibo_token");
+let AIBOS = []; try { AIBOS = JSON.parse(load("aibo_duet_list") || "[]"); } catch (e) {}
+let PICKED = []; try { PICKED = JSON.parse(load("aibo_duet_picked") || "[]"); } catch (e) {}
+document.getElementById("token").value = TOKEN;
+
+// ふるまい（公式の TrickName 一覧）
+const TRICKS = [["幸せなら手をたたこう","ifYoureHappyAndYouKnowIt"],["ロンドン橋落ちた","londonBridgeIsFallingDown"],["ラジオ体操第一","radioExerciseNo1"],["とってもかわいいaibo","veryLovelyAibo"],["花のワルツ","waltzOfTheFlowers"],["ハッピーバースデー","happyBirthday"],["スクワットしよう","aiboSquat"]];
+const tricksBox = document.getElementById("tricks");
+TRICKS.forEach(([label, code]) => {
+  const b = document.createElement("button"); b.className = "sub-btn"; b.textContent = label;
+  b.onclick = () => sendAll(label, "play_trick", { TrickName: code });
+  tricksBox.appendChild(b);
+});
+
+function drawList() {
+  const box = document.getElementById("aiboList");
+  if (!AIBOS.length) return;
+  box.innerHTML = "";
+  AIBOS.forEach(a => {
+    const l = document.createElement("label");
+    const c = document.createElement("input"); c.type = "checkbox"; c.value = a.id; c.checked = !PICKED.length || PICKED.includes(a.id);
+    c.onchange = () => { PICKED = [...box.querySelectorAll("input:checked")].map(x => x.value); store("aibo_duet_picked", JSON.stringify(PICKED)); };
+    l.appendChild(c); l.appendChild(document.createTextNode("🐕 " + a.name)); box.appendChild(l);
+  });
+  PICKED = [...box.querySelectorAll("input:checked")].map(x => x.value);
+}
+drawList();
+if (TOKEN && AIBOS.length) statusBox.innerHTML = "踊るアイボにチェックを入れて、曲のボタンを押してください";
+
+async function findAibo() {
+  const t = document.getElementById("token").value.trim(), msg = document.getElementById("setMsg");
+  if (!t) { msg.innerHTML = '<span class="ng">アクセストークンを入れてください</span>'; return; }
+  msg.textContent = "探しています…";
+  try {
+    const res = await fetch(BASE + "/devices", { headers: { "Authorization": "Bearer " + t } });
+    if (!res.ok) { msg.innerHTML = '<span class="ng">見つけられませんでした（' + res.status + '）。アクセストークンが正しいか、期限が切れていないか確かめてください</span>'; return; }
+    const list = (await res.json()).devices || [];
+    TOKEN = t; AIBOS = list.map(d => ({ id: d.deviceId, name: d.nickname || d.deviceId })); PICKED = [];
+    store("aibo_token", TOKEN); store("aibo_duet_list", JSON.stringify(AIBOS)); store("aibo_duet_picked", "[]");
+    drawList();
+    msg.innerHTML = list.length ? '<span class="ok">アイボが ' + list.length + ' 台見つかりました。上の「踊るアイボ」で選べます</span>' : '<span class="ng">アイボが見つかりませんでした</span>';
+    if (list.length) statusBox.innerHTML = "踊るアイボにチェックを入れて、曲のボタンを押してください";
+  } catch (e) { msg.innerHTML = '<span class="ng">通信に失敗しました</span>'; }
+}
+
+function say(text) {
+  return new Promise(done => {
+    if (!window.speechSynthesis) return done();
+    const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; u.rate = 1.0;
+    u.onend = done; u.onerror = done; setTimeout(done, 4000);
+    window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+  });
+}
+
+let busy = false;
+// 1台に送って、できたかどうかを待つ
+async function sendOne(a, capability, args) {
+  try {
+    const res = await fetch(`${BASE}/devices/${a.id}/capabilities/${capability}/execute`, { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify({ arguments: args }) });
+    if (res.status === 400) return "⚠️ この動きは使えませんでした";
+    if (res.status === 401 || res.status === 403) return "⚠️ トークンが使えません（期限切れかも）";
+    if (!res.ok) return `⚠️ 通信エラー (${res.status})`;
+    const id = (await res.json()).executionId;
+    for (let i = 0; id && i < 10; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      let st = "";
+      try { const r2 = await fetch(`${BASE}/executions/${id}`, { headers: { "Authorization": `Bearer ${TOKEN}` } }); if (r2.ok) st = (await r2.json()).status; } catch (e) { break; }
+      if (st === "SUCCEEDED") return "🎉 できました";
+      if (st === "FAILED") return "😴 できませんでした（寝ている・充電台の上・覚えていない など）";
+      if (st === "IN_PROGRESS") return "💃 動いています";
+    }
+    return "📨 送りました";
+  } catch (e) { return "⚠️ 通信に失敗しました"; }
+}
+
+async function sendAll(label, capability, args) {
+  if (busy) return;
+  const targets = AIBOS.filter(a => PICKED.includes(a.id));
+  if (!TOKEN || !targets.length) { statusBox.innerHTML = "⚙️ 先に設定でアイボを探して、踊るアイボにチェックを入れてください"; return; }
+  busy = true; document.querySelectorAll(".sub-btn").forEach(b => b.disabled = true);
+  try {
+    const names = targets.map(a => a.name).join("・");
+    statusBox.innerHTML = `🎤 『${label}』（${names}）`;
+    if (document.getElementById("countdown").checked) { await say(`${label}。いち、に、さん`); }
+    statusBox.innerHTML = `📨 『${label}』を ${targets.length} 台に送っています...`;
+    // 全員に同時に送る（1台ずつ待たない）
+    const results = await Promise.all(targets.map(a => sendOne(a, capability, args)));
+    statusBox.innerHTML = `<b>『${label}』</b><br>` + targets.map((a, i) => `🐕 ${a.name}：${results[i]}`).join("<br>");
+  } finally {
+    busy = false; document.querySelectorAll(".sub-btn").forEach(b => b.disabled = false);
+  }
+}
+</script>
+</body>
+</html>

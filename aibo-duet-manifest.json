@@ -1,0 +1,13 @@
+{
+  "name": "aibo みんなで踊る",
+  "short_name": "みんなで踊る",
+  "start_url": "aibo-duet.html",
+  "scope": "aibo-duet.html",
+  "display": "standalone",
+  "background_color": "#fdf2f8",
+  "theme_color": "#db2777",
+  "icons": [
+    { "src": "aibo-duet-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "aibo-duet-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
