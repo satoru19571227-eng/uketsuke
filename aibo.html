@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>aibo かんたん声リモコン</title>
+<style>
+  body { font-family: "Meiryo", sans-serif; background: #f0f8ff; text-align: center; padding: 16px; margin: 0; }
+  .card { background: white; max-width: 500px; margin: 0 auto 16px; padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border: 3px solid #4682b4; }
+  h1 { color: #1e3a8a; font-size: 24px; margin-top: 0; }
+  h2 { color: #1e3a8a; font-size: 20px; margin: 0 0 10px; }
+  .mic-btn { width: 100%; font-size: 22px; padding: 22px 10px; border-radius: 50px; background: #ff4b4b; color: white; border: none; cursor: pointer; font-weight: bold; box-shadow: 0 6px 12px rgba(255,75,75,0.4); margin: 15px 0; }
+  .status-box { font-size: 18px; font-weight: bold; color: #333; min-height: 60px; background: #f8f9fa; border-radius: 12px; padding: 15px; margin: 15px 0; border: 1px solid #ddd; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
+  .sub-btn { font-size: 18px; padding: 14px; border-radius: 12px; border: none; background: #3b82f6; color: white; font-weight: bold; cursor: pointer; }
+  .sub-btn.posture { background: #0ea5e9; }
+  .sub-btn.gray { background: #64748b; }
+  input, select { width: 100%; box-sizing: border-box; font-size: 16px; padding: 10px; margin: 4px 0 12px; border: 1px solid #999; border-radius: 8px; }
+  label { display: block; text-align: left; font-weight: bold; color: #333; }
+  .note { font-size: 14px; color: #555; text-align: left; line-height: 1.6; }
+  .ok { color: #1b8a3a; } .ng { color: #c62828; }
+  details { text-align: left; }
+  summary { font-size: 18px; font-weight: bold; color: #1e3a8a; cursor: pointer; }
+  ol { padding-left: 22px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="card" id="remote">
+  <h1>🐕 aibo かんたん声リモコン</h1>
+  <p style="font-size:16px; color:#555;">赤いボタンを押して<b>「ただいま」「お母さん」「お散歩」「お手」</b>と話しかけてください</p>
+  <button id="micBtn" class="mic-btn">🎤 押して話しかける</button>
+  <div id="status" class="status-box">ここに聞き取った言葉が出ます</div>
+  <p style="font-size:14px; color:#666; margin-top:25px;">👇 ボタンを押すだけでも動きます</p>
+  <div class="grid">
+    <button class="sub-btn posture" onclick="runCommand('おすわり', 'posture', 'sit')">🪑 おすわり</button>
+    <button class="sub-btn posture" onclick="runCommand('立つ', 'posture', 'stand')">🐕 立つ</button>
+    <button class="sub-btn" onclick="runCommand('万歳', 'motion', 'cheer')">🙌 万歳</button>
+    <button class="sub-btn" onclick="runCommand('お手', 'motion', 'paw', 'BODY_LEFT')">🐾 お手</button>
+    <button class="sub-btn" onclick="runCommand('ピース', 'motion', 'peace', 'BODY_LEFT')">✌️ ピース</button>
+    <button class="sub-btn" onclick="runCommand('喜ぶ', 'motion', 'friendly', 'BODY_BOTH')">😊 喜ぶ</button>
+    <button class="sub-btn" onclick="runCommand('吠える', 'motion', 'bark')">🔊 ワンと鳴く</button>
+    <button class="sub-btn" onclick="runCommand('ダンス', 'motion', 'dance')">💃 ダンス</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⚙️ 設定（最初に1回だけ）</h2>
+  <p class="note">ここに入れた内容は、<b>この携帯の中だけ</b>に保存されます。ほかの人には見えません。</p>
+  <label for="token">あなたのアクセストークン</label>
+  <input id="token" type="password" autocomplete="off" placeholder="eyJ… で始まる長い文字">
+  <button class="sub-btn gray" style="width:100%" onclick="findAibo()">🔍 自分のアイボを探す</button>
+  <label for="device" style="margin-top:12px">動かすアイボ</label>
+  <select id="device"><option value="">（「自分のアイボを探す」を押してください）</option></select>
+  <button class="sub-btn" style="width:100%" onclick="saveSettings()">💾 保存する</button>
+  <p id="setMsg" class="note"></p>
+</div>
+
+<div class="card">
+  <details>
+    <summary>📖 アクセストークンの取り方</summary>
+    <ol class="note">
+      <li>パソコンかスマホで <b>aibo Developer Site</b>（https://developer.aibo.com/jp/）を開く</li>
+      <li>aibo のアプリで使っているアカウントでログインする</li>
+      <li>「<b>アクセストークン</b>」の項目で、アクセストークンを生成する</li>
+      <li>表示された長い文字（eyJ… で始まる）を<b>全部コピー</b>して、上の「あなたのアクセストークン」に貼り付ける</li>
+      <li>「自分のアイボを探す」を押し、出てきたアイボを選んで「保存する」</li>
+    </ol>
+    <p class="note">
+      ※ 生成したアクセストークンは、あとからもう一度表示することはできません。分からなくなったら、古いトークンを破棄して作り直してください。<br>
+      ※ アクセストークンには<b>有効期限</b>があります。急に動かなくなったら、作り直して貼り付け直してください。<br>
+      ※ アクセストークンは、<b>人に教えないでください</b>（教えると、その人があなたのアイボを動かせてしまいます）。<br>
+      ※ aibo のシステムソフトウェアが新しいこと、aibo がネットワークにつながっていることが必要です。
+    </p>
+  </details>
+</div>
+
+<script>
+const BASE = "https://public.api.aibo.com/v1";
+const statusBox = document.getElementById("status");
+const micBtn = document.getElementById("micBtn");
+function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+function store(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+let TOKEN = load("aibo_token"), DEVICE_ID = load("aibo_device");
+document.getElementById("token").value = TOKEN;
+if (DEVICE_ID) { const o = document.createElement("option"); o.value = DEVICE_ID; o.textContent = load("aibo_device_name") || DEVICE_ID; o.selected = true; document.getElementById("device").appendChild(o); }
+if (!TOKEN || !DEVICE_ID) statusBox.innerHTML = "⚙️ はじめに、下の「設定」であなたのアクセストークンを入れてください";
+
+async function findAibo() {
+  const t = document.getElementById("token").value.trim(), msg = document.getElementById("setMsg");
+  if (!t) { msg.innerHTML = '<span class="ng">アクセストークンを入れてください</span>'; return; }
+  msg.textContent = "探しています…";
+  try {
+    const res = await fetch(BASE + "/devices", { headers: { "Authorization": "Bearer " + t } });
+    if (!res.ok) { msg.innerHTML = '<span class="ng">見つけられませんでした（' + res.status + '）。アクセストークンが正しいか、期限が切れていないか確かめてください</span>'; return; }
+    const list = (await res.json()).devices || [];
+    const sel = document.getElementById("device"); sel.innerHTML = "";
+    list.forEach(d => { const o = document.createElement("option"); o.value = d.deviceId; o.textContent = d.nickname || d.deviceId; sel.appendChild(o); });
+    msg.innerHTML = list.length ? '<span class="ok">アイボが ' + list.length + ' 台見つかりました。選んで「保存する」を押してください</span>' : '<span class="ng">アイボが見つかりませんでした</span>';
+  } catch (e) { msg.innerHTML = '<span class="ng">通信に失敗しました</span>'; }
+}
+function saveSettings() {
+  const t = document.getElementById("token").value.trim(), sel = document.getElementById("device"), msg = document.getElementById("setMsg");
+  if (!t || !sel.value) { msg.innerHTML = '<span class="ng">アクセストークンを入れて、アイボを選んでください</span>'; return; }
+  TOKEN = t; DEVICE_ID = sel.value;
+  const ok = store("aibo_token", TOKEN) && store("aibo_device", DEVICE_ID) && store("aibo_device_name", sel.options[sel.selectedIndex].textContent);
+  msg.innerHTML = ok ? '<span class="ok">保存しました。上のボタンでアイボを動かせます</span>' : '<span class="ng">保存できませんでした（このブラウザでは保存できない設定になっています）</span>';
+  statusBox.innerHTML = "ここに聞き取った言葉が出ます";
+}
+
+// 声でお返事する関数
+function speakReply(text) {
+  window.speechSynthesis.cancel();
+  const uttr = new SpeechSynthesisUtterance(text);
+  uttr.lang = "ja-JP"; uttr.pitch = 1.4; uttr.rate = 1.1;
+  window.speechSynthesis.speak(uttr);
+}
+
+// aiboに命令を送る関数
+async function sendAibo(label, cmdType, category, mode = "NONE") {
+  if (!TOKEN || !DEVICE_ID) { statusBox.innerHTML = "⚙️ 先に下の「設定」でアクセストークンを入れて保存してください"; return; }
+  statusBox.innerHTML += `<br>🐕 aiboに『${label}』を送っています...`;
+  const url = cmdType === "posture"
+    ? `${BASE}/devices/${DEVICE_ID}/capabilities/change_posture/execute`
+    : `${BASE}/devices/${DEVICE_ID}/capabilities/play_motion/execute`;
+  const bodyData = cmdType === "posture" ? { arguments: { FinalPosture: category } } : { arguments: { Category: category, Mode: mode } };
+  try {
+    const res = await fetch(url, { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify(bodyData) });
+    if (res.ok) statusBox.innerHTML = `🎉 <b>『${label}』成功！</b><br>aiboが動いています！`;
+    else if (res.status === 401 || res.status === 403) statusBox.innerHTML = `⚠️ アクセストークンが使えません（期限切れかもしれません）。設定で入れ直してください`;
+    else statusBox.innerHTML = `⚠️ 通信エラー (${res.status})`;
+  } catch (e) { statusBox.innerHTML = `⚠️ 通信に失敗しました`; }
+}
+
+// ボタン直接実行用
+function runCommand(label, cmdType, category, mode = "NONE") {
+  statusBox.innerHTML = `🔘 『${label}』ボタンを押しました`;
+  speakReply(`アイボ、${label}するのだ！`);
+  sendAibo(label, cmdType, category, mode);
+}
+
+// 言葉から判定する関数
+function processVoiceText(text) {
+  statusBox.innerHTML = `💬 聞き取った言葉：<b>「${text}」</b>`;
+  if (/ただいま|帰った|万歳|バンザイ|ばんざい/.test(text)) { speakReply("おかえりなさいなのだ！アイボと一緒にバンザイして喜ぶのだ！"); sendAibo("万歳", "motion", "cheer"); }
+  else if (/お母さん|おかあさん|ママ|喜|好き|かわいい/.test(text)) { speakReply("お母さん大好き！アイボもとっても喜んでいるよ！"); sendAibo("喜ぶ", "motion", "friendly", "BODY_BOTH"); }
+  else if (/散歩|さんぽ|お出かけ|行こう|ワン|鳴/.test(text)) { speakReply("やったー！お散歩に行くのだ！アイボ、元気よくワンと鳴くのだ！"); sendAibo("ワンと鳴く", "motion", "bark"); }
+  else if (/お手|おて|タッチ/.test(text)) { speakReply("アイボ、上手にお手をするのだ！"); sendAibo("お手", "motion", "paw", "BODY_LEFT"); }
+  else if (/ピース|写真|チーズ/.test(text)) { speakReply("はいチーズ！アイボも可愛くピースするよ！"); sendAibo("ピース", "motion", "peace", "BODY_LEFT"); }
+  else if (/おすわり|座|待て/.test(text)) { speakReply("アイボ、ちゃんとおすわりして待つんだよ！"); sendAibo("おすわり", "posture", "sit"); }
+  else if (/立|起/.test(text)) { speakReply("アイボ、元気に立ち上がるのだ！"); sendAibo("立つ", "posture", "stand"); }
+  else if (/ダンス|踊|歌/.test(text)) { speakReply("みんなで楽しくダンスして盛り上がるのだ！"); sendAibo("ダンス", "motion", "dance"); }
+  else { speakReply(`${text}って言ったのだ？アイボが首をかしげているよ！`); sendAibo("首をかしげる", "motion", "curious", "BODY_BOTH"); }
+}
+
+// 音声認識の準備
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRecognition) {
+  const rec = new SpeechRecognition(); rec.lang = "ja-JP"; rec.interimResults = false;
+  micBtn.onclick = () => { rec.start(); micBtn.style.background = "#28a745"; micBtn.innerText = "🔴 聞いています...どうぞお話ください"; statusBox.innerHTML = "👂 耳を澄ませています..."; };
+  rec.onresult = (e) => processVoiceText(e.results[0][0].transcript);
+  rec.onend = () => { micBtn.style.background = "#ff4b4b"; micBtn.innerText = "🎤 押して話しかける"; };
+  rec.onerror = () => { statusBox.innerHTML = "⚠️ もう一度ボタンを押して話しかけてみてください"; micBtn.style.background = "#ff4b4b"; micBtn.innerText = "🎤 押して話しかける"; };
+} else {
+  micBtn.style.display = "none";
+  statusBox.innerHTML = "※このブラウザは音声認識に対応していません（下のボタンは使えます）";
+}
+</script>
+</body>
+</html>
