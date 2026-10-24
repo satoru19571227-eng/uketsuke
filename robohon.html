@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ロボホン リモコン</title>
+<link rel="manifest" href="robohon-manifest.json">
+<link rel="icon" href="robohon-icon-192.png">
+<link rel="apple-touch-icon" href="robohon-icon-192.png">
+<meta name="theme-color" content="#f59e0b">
+<style>
+  body { font-family: "Meiryo", sans-serif; background: #f0f8ff; text-align: center; padding: 16px; margin: 0; }
+  .card { background: white; max-width: 500px; margin: 0 auto 16px; padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border: 3px solid #4682b4; }
+  h1 { color: #1e3a8a; font-size: 24px; margin-top: 0; }
+  .status-box { font-size: 18px; font-weight: bold; color: #333; min-height: 60px; background: #f8f9fa; border-radius: 12px; padding: 15px; margin: 15px 0; border: 1px solid #ddd; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
+  .sub-btn { font-size: 18px; padding: 14px; border-radius: 12px; border: none; background: #3b82f6; color: white; font-weight: bold; cursor: pointer; }
+  .sub-btn.posture { background: #0ea5e9; }
+  .sub-btn.stop { background: #ef4444; width: 100%; margin-top: 8px; }
+  input, select { width: 100%; box-sizing: border-box; font-size: 16px; padding: 10px; margin: 4px 0 8px; border: 1px solid #999; border-radius: 8px; }
+  label { display: block; text-align: left; font-weight: bold; color: #333; }
+  .note { font-size: 14px; color: #555; text-align: left; line-height: 1.6; }
+  .ok { color: #1b8a3a; } .ng { color: #c62828; }
+  #top { position: sticky; top: 8px; z-index: 5; background: white; border-radius: 12px; }
+  #top .status-box { margin: 0; }
+  h2 { color: #b45309; font-size: 20px; text-align: left; margin: 30px 0 0; }
+  h3 { color: #b45309; font-size: 18px; text-align: left; margin: 22px 0 0; border-bottom: 2px solid #f59e0b; }
+  .sub-btn.more { background: #f59e0b; font-size: 16px; padding: 12px 6px; }
+  .sub-btn.more small { display: block; font-size: 11px; font-weight: normal; opacity: 0.9; }
+  .lyrics { font-size: 24px; font-weight: bold; min-height: 96px; background: #1e293b; color: #fde68a; border-radius: 12px; padding: 14px; margin-top: 10px; line-height: 1.5; }
+  .lyrics small { display: block; color: #94a3b8; font-size: 16px; font-weight: normal; }
+  .sub-btn.sing { background: #db2777; }
+  .row { display: flex; gap: 8px; } .row > * { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🤖 ロボホン 携帯リモコン</h1>
+  <div id="top">
+    <div id="status" class="status-box">ボタンを押すとロボホンが動きます</div>
+    <button class="sub-btn stop" onclick="stopAll()">⏹ 止める</button>
+  </div>
+
+  <label for="text" style="margin-top:20px">しゃべらせる言葉</label>
+  <input id="text" placeholder="例：こんにちは、ロボホンです">
+  <div class="row">
+    <select id="gesture"><option value="">身ぶりなし</option></select>
+    <button class="sub-btn" onclick="speakText()">🗣 しゃべる</button>
+  </div>
+
+  <p style="font-size:14px; color:#666; margin-top:20px;">👇 よく使うボタン</p>
+  <div class="grid">
+    <button class="sub-btn posture" onclick="run('立ち上がる', 'standSit', '立ち上がる')">🧍 立ち上がる</button>
+    <button class="sub-btn posture" onclick="run('座る', 'standSit', '座る')">🪑 座る</button>
+    <button class="sub-btn" onclick="run('ラジオ体操', 'dance', '39')">🏃 ラジオ体操</button>
+    <button class="sub-btn" onclick="run('ロボホン体操', 'dance', '24')">🤸 ロボホン体操</button>
+    <button class="sub-btn" onclick="run('太極拳', 'dance', '52')">🥋 太極拳</button>
+    <button class="sub-btn" onclick="run('花のワルツ', 'dance', '77')">🌸 花のワルツ</button>
+    <button class="sub-btn" onclick="run('バースデーソング', 'dance', '121')">🎂 誕生日の歌</button>
+    <button class="sub-btn" onclick="run('拍手', 'speakmove', 'パチパチパチ', '拍手')">👏 拍手</button>
+  </div>
+
+  <label for="volume" style="margin-top:20px">音量（1 小さい 〜 7 大きい）</label>
+  <div class="row">
+    <select id="volume"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option></select>
+    <button class="sub-btn" onclick="run('音量 ' + volume.value, 'changeVolume', volume.value)">🔊 音量を変える</button>
+  </div>
+
+  <h2>🎤 カラオケ（ロボホンが歌う）</h2>
+  <div id="lyrics" class="lyrics">曲のボタンを押すと、ここに歌詞が出ます</div>
+  <div class="grid" id="karaoke"></div>
+
+  <h2>🗣 方言でしゃべる</h2>
+  <p class="note">声の上がり下がりを付けて、方言らしく言います。抑揚は「それらしく」付けたものです。</p>
+  <div id="dialects"></div>
+
+  <p class="note" style="margin-top:24px">👇 ここから下は、ロボホンに入っているすべての動きです。<b>1つ押したら、終わるまで待ってから</b>次を押してください。途中でやめるときは「止める」を押します。</p>
+  <div id="more"></div>
+</div>
+
+<div class="card">
+  <h1 style="font-size:20px">⚙️ 設定</h1>
+  <p class="note">この携帯とロボホンを<b>同じ家のWi-Fi</b>につなぎ、ロボホンで<b>ロブリック</b>を起動してから使います。</p>
+  <label for="ip">ロボホンの住所（IPアドレス）</label>
+  <input id="ip" inputmode="decimal" placeholder="192.168.0.195">
+  <div class="row">
+    <button class="sub-btn" onclick="saveIp()">💾 保存する</button>
+    <button class="sub-btn posture" onclick="checkRobot()">🔍 つながるか確かめる</button>
+  </div>
+  <p id="setMsg" class="note"></p>
+</div>
+
+<script>
+const statusBox = document.getElementById("status");
+
+// ダンス126曲（ロボホンのロブリックに書いてある名前。番号 = 1〜126）
+const DANCES = ["アイネ・クライネ・ナハトムジーク","大きな栗の木の下で","阿波踊り","エアギター1","糸巻きの歌","結んで開いて","げんこつ山の狸さん","交響曲第９番","ジングルベル","カンフー","80年代ディスコ","さくら","ミリタリーマーチ","フラメンコ","フラダンス","野球応援","チェッコリ","体遊びの歌","和太鼓","もろびとこぞりて","歌舞伎","くるみ割り人形の行進曲","ひな祭り","ロボホン体操","天国と地獄","70年代ディスコ","我は海の子","ロボホン音頭","エアバイオリン","タップダンス","パラパラ","おめでとうクリスマス","うさぎのダンス","コサックダンス","子守唄","チアリーディング1","マーチングバンド","森のくまさん","ラジオ体操","ロボホンズブートキャンプ","ハカ","ちゃんばらごっこ","ヲタ芸","きよしこの夜","春の海","白鳥の湖","タンゴ","忍者のダンス","インド舞踊","ソーラン節","おべんとうばこのうた","太極拳","グーチョキパーでなにつくろう","ロボホン体操第2","ツイスト","ひいらぎかざろう","一月一日","リンボーダンス","三味線1","美しく青きドナウ","ロボホンマーチ","結婚行進曲","君が代","アイリッシュダンス","ゆりかごの歌","ハロウィン1","ボクササイズ","アメイジング・グレイス","越天楽","スケーターズ・ワルツ","モンキーダンス","春が来た","ロボホンソング","猫ふんじゃった","ヴォーグダンス","エイサー","花のワルツ","ハロウィン2","三味線2","アヴェマリア","ロボホンのお正月","巨大ロボホンのダンス","仰げば尊し","チャチャチャ","おさんぽのうた","オクラホマミキサー","オルゴールのダンス","ロボホン踊り唄","ロボホン賛歌","ハロウィン3","トルコ行進曲","The first NOEL","シャープ戦隊ロボレンジャー","まめまき","おすもうのダンス","誰も寝てはならぬ","ロボホンルンバ","ジェンカ","ロボホンのこうば","炭坑節","タヒチアンダンス","魔法使い1のダンス","ヒップホップダンス","あらのの果てに","びっくりシンフォニー","あんたがたどこさ","フォーエバーロボホン ボーカルパート","フォーエバーロボホン ギターパート","フォーエバーロボホン ドラムパート","ロボホンポルカ","草競馬","ロボ盆ダンス","兄弟ロボホン","魔法使い2のダンス","ジ・エンターテイナー","もみの木","アルプス一万尺","チアリーディング2","北のロボホン","どこかで春が","バースデーソング","ロボホンサンバ","エアギター2","般若心経","マサイ族のダンス","魔法使い3のダンス"];
+// ダンスの分け方（番号）。126曲が1回ずつ入っています
+const DANCE_GROUPS = [
+  ["🤖 ロボホンの歌・体操", [24,28,39,40,52,54,61,67,73,81,82,88,89,93,97,99,107,108,109,110,112,113,119,122]],
+  ["👶 童謡・こどもの歌", [2,5,6,7,12,18,23,27,33,35,38,51,53,57,65,72,74,83,85,94,106,117,120,121]],
+  ["🎌 日本の踊り・和の音", [3,19,21,42,45,48,50,59,63,69,76,79,95,100,124]],
+  ["🎻 クラシック・名曲", [1,8,13,22,25,46,60,62,68,70,77,80,87,91,96,105,111,115]],
+  ["🎄 季節の行事", [9,20,32,44,56,66,78,90,92,102,104,114,116,126]],
+  ["🌍 世界のダンス", [10,11,14,15,17,26,30,31,34,41,47,49,55,58,64,71,75,84,86,98,101,103,125]],
+  ["🎸 元気・応援・エア楽器", [4,16,29,36,37,43,118,123]],
+];
+// ロボホンの声で歌う21曲（短め。番号 = 1〜21）
+let SONGS = ["こいのぼり","七夕さま","うさぎ","ジングルベル","一月一日","ハッピーバースデー","蝶々","かたつむり","雨降り","雪やこんこ","鳩","桃太郎","もみじ","さくら","月","かもめの水兵さん","我は海の子","うさぎと亀","どんぐりころころ","ほたるこい","シャボン玉"];
+// しゃべりながらする身ぶり24
+const GESTURES = ["右を向く","左を向く","正面を向く","上を向く","下を向く","大きく右手を上げる","小さく右手を上げる","右手を下げる","大きく左手を上げる","小さく左手を上げる","左手を下げる","ボールをける","準備運動","早歩き","逆立ち","乾杯！","おはよう","おかえり","おやすみ","ただいま","よろしくね","右側を案内する","左側を案内する","拍手"];
+// 声なしの動き（ロボホン本体の一覧、36種類）
+const MOVES = ["右を向く","左を向く","正面を向く","上を向く","下を向く","大きく右手を上げる","小さく右手を上げる","右手を下げる","大きく左手を上げる","小さく左手を上げる","左手を下げる","バンザイ","バイバイ","テニス","飛行機","出発進行","ゴリラ","スキー","乾杯","バイオリン","お辞儀","歯磨き","掃除","サッカー","えへへ","お茶を飲む","食べる","満腹","敬礼","バスケ","スクワット","ボールをける","準備運動","逆立ち","早歩き","拍手"].map(n => [n, n]);
+
+GESTURES.forEach(g => { const o = document.createElement("option"); o.value = o.textContent = g; document.getElementById("gesture").appendChild(o); });
+
+function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+function store(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+let IP = load("robohon_ip") || "192.168.0.195";
+document.getElementById("ip").value = IP;
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("robohon-sw.js", { scope: "robohon.html" }).catch(() => {});
+
+const ERRORS = { MannerOn: "ロボホンがマナーモードです。解除してください", InUse: "ほかの端末がロブリックを使っています", StandAlone: "ロボホンのロブリックが待ち受け状態ではありません", NoLicence: "ロブリックのライセンスがありません", InvalidValue: "命令の内容が正しくありません" };
+const NO_ROBOT = location.protocol === "https:"
+  ? "ロボホンにつながりません。同じWi-Fiか、ロブリックが起動しているか確かめてください。はじめて使うときは、Chromeが「ローカルネットワーク上のデバイス」へのアクセスをたずねるので「許可」を押してください"
+  : "ロボホンにつながりません。同じWi-Fiか、ロブリックが起動しているか確かめてください";
+let cmdId = Date.now() % 100000;
+async function robot(path, ms = 10000) {
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
+  // targetAddressSpace: 家の中の機械へ送ることをChromeに伝える（https のページから http のロボホンへ送るために必要）
+  try { const res = await fetch(`http://${IP}:18001/${path}`, { cache: "no-store", signal: ctl.signal, targetAddressSpace: "local" }); return await res.text(); }
+  finally { clearTimeout(timer); }
+}
+// PC版と同じ形の返事を作る
+async function api(path) {
+  try {
+    const u = new URL(path, "http://x");
+    if (u.pathname === "/api/send") {
+      const args = u.searchParams.getAll("a").map(a => encodeURIComponent(a));
+      const reply = (await robot([u.searchParams.get("cmd"), ++cmdId, ...args].join("/"))).trim().split(/\s+/)[0];
+      return ERRORS[reply] ? { ok: false, error: ERRORS[reply] } : { ok: true };
+    }
+    if (u.pathname === "/api/poll") return { ok: true, busy: /^_busy/m.test(await robot("poll", 5000)) };
+    if (u.pathname === "/api/stop") { await robot("reset_all"); return { ok: true }; }
+  } catch (e) { return { ok: false, error: NO_ROBOT }; }
+  return { ok: false, error: "使えない命令です" };
+}
+function saveIp() {
+  const v = document.getElementById("ip").value.trim(), msg = document.getElementById("setMsg");
+  if (!/^\d+\.\d+\.\d+\.\d+$/.test(v)) { msg.innerHTML = '<span class="ng">192.168.0.195 のような数字で入れてください</span>'; return; }
+  IP = v;
+  msg.innerHTML = store("robohon_ip", v) ? '<span class="ok">保存しました</span>' : '<span class="ng">保存できませんでした（このページを開いている間だけ使えます）</span>';
+}
+async function checkRobot() {
+  saveIp();
+  const msg = document.getElementById("setMsg"); msg.textContent = "確かめています…";
+  const p = await api("/api/poll");
+  msg.innerHTML = p.ok ? '<span class="ok">✅ ロボホンにつながりました</span>' : '<span class="ng">' + p.error + '</span>';
+}
+
+let running = 0;
+
+// ロボホンに命令を送り、終わるまで見守る
+async function run(label, cmd, ...args) {
+  const my = ++running;
+  statusBox.innerHTML = `📨 『${label}』を送っています...`;
+  try {
+    const q = "cmd=" + encodeURIComponent(cmd) + args.map(a => "&a=" + encodeURIComponent(a)).join("");
+    const r = await api("/api/send?" + q);
+    if (!r.ok) { statusBox.innerHTML = `⚠️ ${r.error || "送れませんでした"}`; return; }
+    statusBox.innerHTML = `🤖 『${label}』をしています...`;
+    for (let i = 0; i < 300 && my === running; i++) {
+      await new Promise(ok => setTimeout(ok, 2000));
+      const p = await api("/api/poll");
+      if (!p.ok) { statusBox.innerHTML = `⚠️ ${p.error}`; return; }
+      if (!p.busy) { if (my === running) statusBox.innerHTML = `🎉 『${label}』が終わりました`; return; }
+    }
+  } catch (e) { statusBox.innerHTML = "⚠️ " + NO_ROBOT; }
+}
+
+// カラオケの曲（ロボホンの中に入れた歌声のファイル。歌詞の時刻は、ファイルの始まりからの秒）
+const W = "0x7f042f13";  // 振り付けの中の「待つ」
+const KURI_MOVES = ["0x060001", W, W, W, W, "0x06001e", W, "0x06001d", W, W, "0x06001f", W, W, W, W, "0x060001", W, W, W, W];  // バンザイ・あなた・わたし・手をふる・バンザイ
+const KARAOKE = [
+  { title: "大きな栗の木の下で", file: "kuri2.wav", length: 48,
+    moves: [W, ...KURI_MOVES, W, ...KURI_MOVES], waitMs: 1030,
+    lyrics: [[1.5, "おおきな くりの きのしたで"], [6.95, "あなたと わたし"], [12.41, "なかよく あそびましょう"], [17.86, "おおきな くりの きのしたで"],
+             [24.68, "おおきな くりの きのしたで"], [30.14, "あなたと わたし"], [35.59, "なかよく あそびましょう"], [41.05, "おおきな くりの きのしたで"]] },
+];
+const lyricsBox = document.getElementById("lyrics");
+const send = (cmd, ...args) => api("/api/send?cmd=" + encodeURIComponent(cmd) + args.map(a => "&a=" + encodeURIComponent(a)).join(""));
+
+async function karaoke(song) {
+  // 歌う前に、曲名を言って「いち、に、さん」と数える
+  await run(song.title + "（はじめのあいさつ）", "speech", `${song.title}を、歌うよ。いち、に、さん！`);
+  if (!statusBox.textContent.includes("終わりました")) return;  // 失敗したか、止められた
+  const my = ++running;
+  const r = await send("playBGM", song.file);
+  if (!r.ok) { statusBox.innerHTML = `⚠️ ${r.error}`; return; }
+  const t0 = Date.now();
+  // 振り付けは、歌声が始まる前に1回でまとめて送る（あとから1つずつ送ると断られるため）
+  if (song.moves) send("continueMotionWait", song.moves.join(","), String(song.waitMs));
+  statusBox.innerHTML = `🎤 『${song.title}』を歌っています`;
+  while (my === running) {
+    const sec = (Date.now() - t0) / 1000;
+    if (sec >= song.length) { lyricsBox.innerHTML = "🎉 おしまい"; statusBox.innerHTML = `🎉 『${song.title}』が終わりました`; return; }
+    let i = -1;
+    song.lyrics.forEach(([t], k) => { if (sec >= t) i = k; });
+    const now = i < 0 ? "♪ ♪ ♪" : song.lyrics[i][1], next = song.lyrics[i + 1] ? song.lyrics[i + 1][1] : "";
+    lyricsBox.innerHTML = now + (next ? "<small>つぎ：" + next + "</small>" : "");
+    await new Promise(ok => setTimeout(ok, 200));
+  }
+  lyricsBox.innerHTML = "曲のボタンを押すと、ここに歌詞が出ます";
+}
+// 方言の決まり文句。"90:おお 150:き" は「おお」を高さ90、「き」を高さ150で言う（100がふつう）
+// 大阪弁・東北弁は 2026-10-14 にロボホンで聞いて作ったもの（ロボホン方言セリフ集.md）
+const DIALECTS = [
+  ["🐙 大阪弁", [
+    ["まいど！", "こんにちは", "150:ま 85:いど！"],
+    ["もうかりまっか？", "調子はどう？", "95:もうかり 140:まっ 165:か？"],
+    ["ぼちぼちでんな", "まあまあです", "90:ぼちぼち 140:でん 85:な"],
+    ["ほんまかいな", "本当なの？", "90:ほん 145:ま 120:かい 80:な"],
+    ["あかんわ", "だめだ", "110:あ 145:かん 80:わ"],
+    ["めっちゃええやん", "すごくいいね", "90:めっ 150:ちゃ 140:ええ 85:やん"],
+    ["しらんけど", "知らないけど", "140:しら 110:ん 85:けど"],
+    ["なんでやねん", "どうしてだよ", "135:なん 105:で 145:や 80:ねん"],
+    ["なんでやねん！", "強いツッコミ", "150:なん 120:で 170:や 70:ねん！"],
+    ["おおきに", "ありがとう", "90:おお 150:き 85:に"],
+    ["ありがとう", "関西風", "75:ありが 150:と 75:う"],
+  ]],
+  ["🍵 京都弁", [
+    ["おこしやす", "ようこそ", "95:おこし 130:や 105:す"],
+    ["おいでやす", "いらっしゃいませ", "95:おいで 130:や 105:す"],
+    ["おおきに", "ありがとう", "95:おお 135:き 90:に"],
+    ["かんにんえ", "ごめんね", "120:かん 100:にん 125:え"],
+    ["おいしおすなあ", "おいしいですね", "95:おいし 130:おす 110:なあ"],
+    ["はんなりしてはるなあ", "上品で明るいですね", "100:はんなり 125:して 130:はる 105:なあ"],
+    ["よろしゅうおたのもうします", "よろしくお願いします", "100:よろしゅう 125:おたの 115:もうし 95:ます"],
+    ["ほな、さいなら", "それでは、さようなら", "120:ほな、 100:さい 125:な 95:ら"],
+  ]],
+  ["🍎 東北弁", [
+    ["おばんです", "こんばんは", "95:おばん 110:で 125:す"],
+    ["んだんだ", "そうそう", "100:んだ 125:んだ"],
+    ["めんこいなあ", "かわいいなあ", "95:めん 120:こい 135:なあ"],
+    ["なして？", "どうして？", "95:な 110:し 150:て？"],
+    ["わがんね", "分からない", "100:わ 125:がん 105:ね"],
+    ["けっぱれ！", "がんばれ！", "100:けっ 135:ぱ 115:れ！"],
+    ["どさ？ ゆさ", "どこへ？ お風呂へ", "100:ど 150:さ？、 120:ゆ 90:さ"],
+    ["いがったなあ", "よかったなあ", "95:い 120:がっ 110:た 135:なあ"],
+  ]],
+];
+const toVtml = s => s.split(" ").map(p => { const [v, w] = p.split(":"); return `<vtml_pitch value="${v}">${w}</vtml_pitch>`; }).join("");
+DIALECTS.forEach(([title, lines]) => {
+  const h = document.createElement("h3"); h.textContent = title; document.getElementById("dialects").appendChild(h);
+  const g = document.createElement("div"); g.className = "grid";
+  lines.forEach(([say, meaning, pitch]) => {
+    const b = document.createElement("button"); b.className = "sub-btn more";
+    b.innerHTML = say + "<small>" + meaning + "</small>";
+    b.onclick = () => run(say, "speech", toVtml(pitch));
+    g.appendChild(b);
+  });
+  document.getElementById("dialects").appendChild(g);
+});
+
+KARAOKE.forEach(song => {
+  const b = document.createElement("button"); b.className = "sub-btn sing";
+  b.textContent = "🎤 " + song.title; b.onclick = () => karaoke(song);
+  document.getElementById("karaoke").appendChild(b);
+});
+
+async function stopAll() {
+  running++;
+  try { await send("stopBGM"); } catch (e) {}
+  try { const r = await api("/api/stop"); statusBox.innerHTML = r.ok ? "⏹ 止めました" : `⚠️ ${r.error}`; }
+  catch (e) { statusBox.innerHTML = "⚠️ " + NO_ROBOT; }
+}
+
+function speakText() {
+  const t = document.getElementById("text").value.trim(), g = document.getElementById("gesture").value;
+  if (!t) { statusBox.innerHTML = "✏️ しゃべらせる言葉を入れてください"; return; }
+  if (g) run(`「${t}」（${g}）`, "speakmove", t, g); else run(`「${t}」`, "speech", t);
+}
+
+// ボタンの並びを作る
+function section(title) { const h = document.createElement("h2"); h.textContent = title; more.appendChild(h); }
+function group(title, items) {
+  const h = document.createElement("h3"); h.textContent = title; more.appendChild(h);
+  const g = document.createElement("div"); g.className = "grid";
+  items.forEach(([label, code, onclick]) => {
+    const b = document.createElement("button"); b.className = "sub-btn more";
+    b.innerHTML = label + "<small>" + code + "</small>"; b.onclick = onclick;
+    g.appendChild(b);
+  });
+  more.appendChild(g);
+}
+const more = document.getElementById("more");
+function build() {
+  more.innerHTML = "";
+  section(`💃 ダンス（${DANCES.length}曲・音楽つき）`);
+  DANCE_GROUPS.forEach(([title, nums]) => group(title, nums.map(n => [DANCES[n - 1], "ダンス " + n, () => run(DANCES[n - 1], "dance", String(n))])));
+  section(`🎵 歌（${SONGS.length}曲・ロボホンの声、短め）`);
+  group("🎵 歌う", SONGS.map((s, i) => [s, "歌 " + (i + 1), () => run(s + "（歌）", "sing", String(i + 1))]));
+  section(`🙋 身ぶり付きでしゃべる（${GESTURES.length}種類）`);
+  group("🙋 上の「しゃべらせる言葉」を言いながら（空なら「えい」）", GESTURES.map(g => [g, "身ぶり", () => run(g, "speakmove", document.getElementById("text").value.trim() || "えい", g)]));
+  section(`🤚 声なしの動き（${MOVES.length}種類）`);
+  group("🤚 動きだけ（約2.5秒）", MOVES.map(([label, code]) => [label, "動き", () => run(label, "move", code)]));
+  section("🧍 立つ・座る（2種類）");
+  group("🧍 姿勢", [["立ち上がる", "姿勢", () => run("立ち上がる", "standSit", "立ち上がる")], ["座る", "姿勢", () => run("座る", "standSit", "座る")]]);
+}
+build();
+
+</script>
+</body>
+</html>
