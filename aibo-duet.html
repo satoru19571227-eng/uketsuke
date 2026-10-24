@@ -25,7 +25,9 @@
   .note { font-size: 14px; color: #555; text-align: left; line-height: 1.6; }
   .ok { color: #1b8a3a; } .ng { color: #c62828; }
   .aibo-list label { font-size: 20px; padding: 10px; border: 2px solid #f9a8d4; border-radius: 12px; margin: 8px 0; display: flex; align-items: center; gap: 12px; }
-  .aibo-list input { width: 28px; height: 28px; margin: 0; }
+  .aibo-list input { width: 28px; height: 28px; margin: 0; flex: none; }
+  .aibo-list select.mark { width: auto; flex: none; margin: 0; padding: 6px; font-size: 16px; }
+  .aibo-list .name { flex: 1; text-align: left; word-break: break-all; }
   .check { display: flex; align-items: center; gap: 10px; font-weight: normal; }
   .check input { width: 22px; height: 22px; margin: 0; }
   details { text-align: left; }
@@ -42,6 +44,7 @@
 
   <h2>🐕 踊るアイボ</h2>
   <div id="aiboList" class="aibo-list"><p class="note">（設定で「アイボを探す」を押すと、ここに出ます）</p></div>
+  <p class="note" style="margin:0">名前の左の印（🩷🧡🖤🤍など）を、その子の色に変えておくと見分けやすくなります。</p>
   <label class="check"><input type="checkbox" id="countdown" checked> 送る前に「いち、に、さん」と数える</label>
 
   <h2 style="margin-top:20px">🎶 曲つきのふるまい</h2>
@@ -109,6 +112,11 @@ TRICKS.forEach(([label, code]) => {
   tricksBox.appendChild(b);
 });
 
+// 名前の横につける色の印（台数が多い人がどの子か見分けやすいように。携帯の中に保存）
+const MARKS = [["🐕", "印なし"], ["🩷", "ピンク"], ["🧡", "オレンジ"], ["🖤", "黒"], ["🤍", "白"], ["🩶", "シルバー"], ["💛", "ゴールド"], ["🐶", "ビーグル"]];
+let MARK = {}; try { MARK = JSON.parse(load("aibo_duet_marks") || "{}"); } catch (e) {}
+const nameOf = a => (MARK[a.id] || "🐕") + " " + a.name;
+
 function drawList() {
   const box = document.getElementById("aiboList");
   if (!AIBOS.length) return;
@@ -116,10 +124,14 @@ function drawList() {
   AIBOS.forEach(a => {
     const l = document.createElement("label");
     const c = document.createElement("input"); c.type = "checkbox"; c.value = a.id; c.checked = !PICKED.length || PICKED.includes(a.id);
-    c.onchange = () => { PICKED = [...box.querySelectorAll("input:checked")].map(x => x.value); store("aibo_duet_picked", JSON.stringify(PICKED)); };
-    l.appendChild(c); l.appendChild(document.createTextNode("🐕 " + a.name)); box.appendChild(l);
+    c.onchange = () => { PICKED = [...box.querySelectorAll("input[type=checkbox]:checked")].map(x => x.value); store("aibo_duet_picked", JSON.stringify(PICKED)); };
+    const m = document.createElement("select"); m.className = "mark"; m.title = "色の印";
+    MARKS.forEach(([e, n]) => { const o = document.createElement("option"); o.value = e; o.textContent = e + " " + n; if ((MARK[a.id] || "🐕") === e) o.selected = true; m.appendChild(o); });
+    m.onchange = () => { MARK[a.id] = m.value; store("aibo_duet_marks", JSON.stringify(MARK)); };
+    const n = document.createElement("span"); n.className = "name"; n.textContent = a.name;
+    l.appendChild(c); l.appendChild(m); l.appendChild(n); box.appendChild(l);
   });
-  PICKED = [...box.querySelectorAll("input:checked")].map(x => x.value);
+  PICKED = [...box.querySelectorAll("input[type=checkbox]:checked")].map(x => x.value);
 }
 drawList();
 if (TOKEN && AIBOS.length) statusBox.innerHTML = "踊るアイボにチェックを入れて、曲のボタンを押してください";
@@ -176,13 +188,13 @@ async function sendAll(label, capability, args) {
   if (!TOKEN || !targets.length) { statusBox.innerHTML = "⚙️ 先に設定でアイボを探して、踊るアイボにチェックを入れてください"; return; }
   busy = true; document.querySelectorAll(".sub-btn").forEach(b => b.disabled = true);
   try {
-    const names = targets.map(a => a.name).join("・");
+    const names = targets.map(nameOf).join("・");
     statusBox.innerHTML = `🎤 『${label}』（${names}）`;
     if (document.getElementById("countdown").checked) { await say(`${label}。いち、に、さん`); }
     statusBox.innerHTML = `📨 『${label}』を ${targets.length} 台に送っています...`;
     // 全員に同時に送る（1台ずつ待たない）
     const results = await Promise.all(targets.map(a => sendOne(a, capability, args)));
-    statusBox.innerHTML = `<b>『${label}』</b><br>` + targets.map((a, i) => `🐕 ${a.name}：${results[i]}`).join("<br>");
+    statusBox.innerHTML = `<b>『${label}』</b><br>` + targets.map((a, i) => `${nameOf(a)}：${results[i]}`).join("<br>");
   } finally {
     busy = false; document.querySelectorAll(".sub-btn").forEach(b => b.disabled = false);
   }
