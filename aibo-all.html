@@ -29,6 +29,16 @@
   #status { position: sticky; top: 8px; z-index: 5; }
   h3 { color: #b45309; font-size: 18px; text-align: left; margin: 26px 0 0; border-bottom: 2px solid #f59e0b; }
   .sub-btn.more { background: #f59e0b; font-size: 16px; padding: 12px 6px; }
+  .sub-btn.move { background: #16a34a; }
+  .sub-btn.person { background: #7c3aed; }
+  .sub-btn.toy { background: #e11d48; }
+  .sub-btn.place { background: #0d9488; }
+  .sub-btn.head { background: #2563eb; }
+  .sub-btn.wait { background: #475569; }
+  .sub-btn.info { background: #0369a1; }
+  .sub-btn.toy small, .sub-btn.place small { display: block; font-size: 11px; font-weight: normal; opacity: 0.9; }
+  .sub-btn.trick { background: #db2777; font-size: 16px; padding: 12px 6px; }
+  .sub-btn.trick small { display: block; font-size: 11px; font-weight: normal; opacity: 0.9; }
   .sub-btn.more small { display: block; font-size: 11px; font-weight: normal; opacity: 0.9; }
 </style>
 </head>
@@ -49,6 +59,103 @@
     <button class="sub-btn" onclick="runCommand('歌う', 'motion', 'sing')">🎵 歌う</button>
     <button class="sub-btn" onclick="runCommand('吠える', 'motion', 'bark')">🔊 ワンと鳴く</button>
     <button class="sub-btn" onclick="runCommand('ダンス', 'motion', 'dance')">💃 ダンス</button>
+  </div>
+  <h3>🚶 歩く・まわる</h3>
+  <p class="note" style="margin:8px 0 0">広い床で使ってください。段差や机の上では使わないでください。</p>
+  <div class="grid" style="margin-top:8px">
+    <label>速さ<select id="mvSpeed"><option value="0">ゆっくり</option><option value="1" selected>ふつう</option><option value="2">はやく</option></select></label>
+    <label>距離<select id="mvDist"><option value="0.3">30cm</option><option value="0.5" selected>50cm</option><option value="1">1m</option><option value="2">2m</option></select></label>
+  </div>
+  <label>まわる角度<select id="mvAngle"><option value="45">45°（少し）</option><option value="90" selected>90°（横向き）</option><option value="180">180°（うしろ向き）</option><option value="360">1回転</option></select></label>
+  <div class="grid" style="margin-top:0">
+    <button class="sub-btn move" onclick="move('前へ歩く', 'move_forward', 1)">⬆️ 前へ</button>
+    <button class="sub-btn move" onclick="move('後ろへ歩く', 'move_forward', -1)">⬇️ 後ろへ</button>
+    <button class="sub-btn move" onclick="move('左へ横歩き', 'move_sideways', 1)">⬅️ 左へ横歩き</button>
+    <button class="sub-btn move" onclick="move('右へ横歩き', 'move_sideways', -1)">➡️ 右へ横歩き</button>
+    <button class="sub-btn move" onclick="turn('左にまわる', 1)">↪️ 左にまわる</button>
+    <button class="sub-btn move" onclick="turn('右にまわる', -1)">↩️ 右にまわる</button>
+    <button class="sub-btn move" onclick="circle('左回りに輪を描く', 'left')">🔄 左回りに輪</button>
+    <button class="sub-btn move" onclick="circle('右回りに輪を描く', 'right')">🔃 右回りに輪</button>
+  </div>
+  <p class="note">「輪」は半径50cmの輪を1周歩きます。</p>
+  <h3>🧑 人をさがす・近づく</h3>
+  <div class="grid" style="margin-top:8px">
+    <label>近づく距離<select id="psDist"><option value="0.4">40cm</option><option value="0.5" selected>50cm</option><option value="1">1m</option><option value="2">2m</option></select></label>
+    <label>見続ける時間<select id="psTime"><option value="20000" selected>20秒</option><option value="60000">1分</option><option value="180000">3分</option></select></label>
+  </div>
+  <div class="grid" style="margin-top:0">
+    <button class="sub-btn person" onclick="runCommand('人を探す', 'find_person', {})">🔍 人を探す</button>
+    <button class="sub-btn person" onclick="runCommand('人に近づく（' + document.getElementById('psDist').selectedOptions[0].textContent + '）', 'approach_person', { DistanceFromTarget: Number(document.getElementById('psDist').value) })">🚶 人に近づく</button>
+    <button class="sub-btn person" style="grid-column: span 2" onclick="runCommand('人を見続ける（' + document.getElementById('psTime').selectedOptions[0].textContent + '）', 'chase_person', { ChasingDurationMsec: Number(document.getElementById('psTime').value) })">👀 人を見続ける</button>
+  </div>
+  <p class="note">「人に近づく」は、自分で人を探してから近づきます。「人を見続ける」は、その場で顔を向けて目で追います（ついて歩くのではありません）。明るい部屋で、アイボから見える所にいてください。</p>
+  <h3>🎾 おもちゃで遊ぶ</h3>
+  <p class="note" style="margin:8px 0 0">専用のピンクボール・アイボーン・サイコロを、アイボから見える床に置いてください。</p>
+  <label style="margin-top:8px">相手<select id="toyTarget"><option value="pinkball" selected>ピンクボール</option><option value="aibone">アイボーン</option><option value="dice">サイコロ</option><option value="aibo">ほかのアイボ</option></select></label>
+  <div class="grid" style="margin-top:0">
+    <button class="sub-btn toy" onclick="toy('を探す', 'find_object', {})">🔍 探す</button>
+    <button class="sub-btn toy" onclick="toy('に近づく', 'approach_object', {})">🚶 近づく</button>
+    <button class="sub-btn toy" onclick="toy('のすぐそばへ行く','get_close_to_object', { Distance: 0.2 })">👣 すぐそばへ<small>近づいたあとに</small></button>
+    <button class="sub-btn toy" onclick="toy('を見続ける', 'chase_object', { ChasingDurationMsec: Number(document.getElementById('psTime').value) })">👀 見続ける<small>時間は上の「見続ける時間」</small></button>
+  </div>
+  <div class="grid">
+    <button class="sub-btn toy" onclick="runCommand('ボールをける', 'kick_object', { TargetType: 'pinkball', KickMotion: 'kick' })">⚽ ボールをける</button>
+    <button class="sub-btn toy" onclick="runCommand('ボールをヘディングする','kick_object', { TargetType: 'pinkball', KickMotion: 'heading' })">🙆 ヘディング</button>
+    <button class="sub-btn toy" onclick="runCommand('アイボーンをくわえる', 'play_bone', { Category: 'holdMouth' })">🦴 アイボーンをくわえる</button>
+    <button class="sub-btn toy" onclick="runCommand('アイボーンを離す', 'release_object', { TargetType: 'aibone' })">🦴 アイボーンを離す</button>
+    <button class="sub-btn toy" onclick="runCommand('サイコロをくわえる', 'play_dice', { Category: 'holdMouthDice' })">🎲 サイコロをくわえる</button>
+    <button class="sub-btn toy" onclick="runCommand('サイコロを離す', 'release_object', { TargetType: 'dice' })">🎲 サイコロを離す</button>
+    <button class="sub-btn toy" onclick="runCommand('サイコロを左に転がす', 'play_dice', { Category: 'rollDiceLeft' })">🎲 左に転がす</button>
+    <button class="sub-btn toy" onclick="runCommand('サイコロを右に転がす', 'play_dice', { Category: 'rollDiceRight' })">🎲 右に転がす</button>
+    <button class="sub-btn toy" onclick="runCommand('サイコロを向こうに転がす', 'play_dice', { Category: 'rollDicePush' })">🎲 向こうに転がす</button>
+    <button class="sub-btn toy" onclick="runCommand('サイコロを手前に転がす', 'play_dice', { Category: 'rollDicePull' })">🎲 手前に転がす</button>
+    <button class="sub-btn toy" style="grid-column: span 2" onclick="runCommand('サイコロを積む', 'play_dice', { Category: 'stackDice' })">🎲 サイコロを積む<small>くわえているときに</small></button>
+  </div>
+  <p class="note">ける・くわえる・転がすは、先に「近づく」でそばへ行ってから押してください。</p>
+
+  <h3>🏠 決まった場所へ行く</h3>
+  <div class="grid" style="margin-top:8px">
+    <button class="sub-btn place" onclick="runCommand('充電台へ行く', 'move_to_position', { TargetType: 'charging_station' })">🔌 充電台へ</button>
+    <button class="sub-btn place" onclick="runCommand('おむかえ場所へ行く', 'move_to_position', { TargetType: 'greeting_spot' })">🚪 おむかえ場所へ</button>
+    <button class="sub-btn place" onclick="runCommand('トイレの場所へ行く', 'move_to_position', { TargetType: 'toilet' })">🚽 トイレの場所へ</button>
+    <button class="sub-btn place" onclick="runCommand('歩き回って地図を思い出す（1分）', 'explore', { Duration: 60 })">🗺️ 地図を思い出す<small>1分歩き回る</small></button>
+  </div>
+  <p class="note">場所へ行けないときは、先に「地図を思い出す」を押してください。おむかえ場所・トイレは、アプリで教えてある場合だけ行けます。</p>
+
+  <h3>🙂 首を動かす</h3>
+  <div class="grid" style="margin-top:8px; grid-template-columns: repeat(3, 1fr)">
+    <span></span>
+    <button class="sub-btn head" onclick="runCommand('上を向く', 'move_head', { Azimuth: 0, Elevation: 30, Velocity: 40 })">⬆️ 上</button>
+    <span></span>
+    <button class="sub-btn head" onclick="runCommand('左を向く', 'move_head', { Azimuth: 60, Elevation: 0, Velocity: 40 })">⬅️ 左</button>
+    <button class="sub-btn head" onclick="runCommand('正面を向く', 'move_head', { Azimuth: 0, Elevation: 0, Velocity: 40 })">⏺️ 正面</button>
+    <button class="sub-btn head" onclick="runCommand('右を向く', 'move_head', { Azimuth: -60, Elevation: 0, Velocity: 40 })">➡️ 右</button>
+    <span></span>
+    <button class="sub-btn head" onclick="runCommand('下を向く', 'move_head', { Azimuth: 0, Elevation: -30, Velocity: 40 })">⬇️ 下</button>
+    <span></span>
+  </div>
+
+  <h3>⏸️ 待つ・指示待ち</h3>
+  <div class="grid" style="margin-top:8px">
+    <button class="sub-btn wait" onclick="runCommand('30秒待つ', 'stay', { Duration: 30 })">⏳ 30秒待つ</button>
+    <button class="sub-btn wait" onclick="runCommand('1分待つ', 'stay', { Duration: 60 })">⏳ 1分待つ</button>
+    <button class="sub-btn wait" onclick="runCommand('指示待ちにする', 'set_mode', { ModeName: 'DEVELOPMENT' })">✋ 指示待ちにする</button>
+    <button class="sub-btn wait" onclick="runCommand('ふだんに戻す', 'set_mode', { ModeName: 'NORMAL' })">🐕 ふだんに戻す</button>
+  </div>
+  <p class="note">「指示待ち」にすると、アイボは自分から歩き回らなくなります。終わったら必ず「ふだんに戻す」を押してください。</p>
+
+  <h3>📋 アイボの様子を知る</h3>
+  <p class="note" style="margin:8px 0 0">押してもアイボは動きません。答えが上の欄に出ます。</p>
+  <div class="grid" style="margin-top:8px">
+    <button class="sub-btn info" onclick="askStatus('バッテリー', 'hungry_status')">🔋 バッテリー</button>
+    <button class="sub-btn info" onclick="askStatus('眠さ', 'sleepy_status')">😪 眠さ</button>
+    <button class="sub-btn info" onclick="askStatus('今の姿勢', 'posture_status')">🧍 今の姿勢</button>
+    <button class="sub-btn info" onclick="askStatus('触られている所', 'body_touched_status')">✋ 触られている所</button>
+    <button class="sub-btn info" onclick="askStatus('肉球', 'paw_pads_status')">🐾 肉球</button>
+    <button class="sub-btn info" onclick="askStatus('名前を呼ばれたか', 'name_called_status')">📣 名前を呼ばれたか</button>
+    <button class="sub-btn info" onclick="askStatus('見えているもの', 'found_objects_status')">👁️ 見えているもの</button>
+    <button class="sub-btn info" onclick="askStatus('くわえているか', 'biting_status')">🦷 くわえているか</button>
+    <button class="sub-btn info" style="grid-column: span 2" onclick="askStatus('反応した言葉', 'voice_command_status')">💬 反応した言葉</button>
   </div>
   <p class="note" style="margin-top:24px">👇 ここから下は、aiboに入っているほかの動きです。名前は英語の名前からの<b>推測</b>なので、実際の動きと違うことがあります。<b>1つ押したら、動き終わるまで待ってから</b>次を押してください。</p>
   <div id="more"></div>
@@ -131,12 +238,20 @@ function speakReply(text) {
 async function sendAibo(label, cmdType, category, mode = "NONE") {
   if (!TOKEN || !DEVICE_ID) { statusBox.innerHTML = "⚙️ 先に下の「設定」でアクセストークンを入れて保存してください"; return; }
   statusBox.innerHTML += `<br>🐕 aiboに『${label}』を送っています...`;
-  const url = cmdType === "posture"
-    ? `${BASE}/devices/${DEVICE_ID}/capabilities/change_posture/execute`
-    : `${BASE}/devices/${DEVICE_ID}/capabilities/play_motion/execute`;
-  const bodyData = cmdType === "posture" ? { arguments: { FinalPosture: category } } : { arguments: { Category: category, Mode: mode } };
+  // 移動は cmdType に命令名（move_forward など）、category に引数を入れる。1回転のように続けて送るときは引数の配列
+  const capability = { posture: "change_posture", trick: "play_trick", motion: "play_motion" }[cmdType] || cmdType;
+  const url = `${BASE}/devices/${DEVICE_ID}/capabilities/${capability}/execute`;
+  const argsList = cmdType === "posture" ? [{ FinalPosture: category }]
+    : cmdType === "trick" ? [{ TrickName: category }]
+    : cmdType === "motion" ? [{ Category: category, Mode: mode }]
+    : [].concat(category);
   try {
-    const res = await fetch(url, { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify(bodyData) });
+    let res;
+    for (const args of argsList) {
+      res = await fetch(url, { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify({ arguments: argsList.length > 1 ? { ...args, Enqueue: true } : args }) });
+      if (!res.ok) break;
+      if (args !== argsList[argsList.length - 1]) await res.json();
+    }
     if (res.ok) {
       statusBox.innerHTML = `📨 『${label}』を送りました。aiboの返事を待っています...`;
       const id = (await res.json()).executionId;
@@ -148,7 +263,9 @@ async function sendAibo(label, cmdType, category, mode = "NONE") {
         if (st === "SUCCEEDED") { statusBox.innerHTML = `🎉 <b>『${label}』成功！</b><br>aiboが動いています！`; return; }
         if (st === "FAILED") { statusBox.innerHTML = `😴 aiboが『${label}』をできませんでした。寝ていないか、充電台に乗っていないか確かめてください`; return; }
       }
-      statusBox.innerHTML = `⏳ 『${label}』を送りました。aiboが受け取るまで、少し待ってください`;
+      statusBox.innerHTML = cmdType === "trick"
+        ? `🎶 『${label}』を送りました。長いふるまいなので、終わるまで待ってから次を押してください`
+        : `⏳ 『${label}』を送りました。aiboが受け取るまで、少し待ってください`;
     }
     else if (res.status === 400) statusBox.innerHTML = `⚠️ 『${label}』は、このaiboでは使えない動きでした`;
     else if (res.status === 401 || res.status === 403) statusBox.innerHTML = `⚠️ アクセストークンが使えません（期限切れかもしれません）。設定で入れ直してください`;
@@ -159,8 +276,85 @@ async function sendAibo(label, cmdType, category, mode = "NONE") {
 // ボタン直接実行用
 function runCommand(label, cmdType, category, mode = "NONE") {
   statusBox.innerHTML = `🔘 『${label}』ボタンを押しました`;
-  speakReply(`アイボ、${label}するのだ！`);
+  // 移動やおもちゃなどの名前は「〜する」「〜へ行く」の形なので「のだ」だけをつける
+  const said = label.replace(/（.*?）/g, "");
+  speakReply(["posture", "motion", "trick"].includes(cmdType) ? `アイボ、${said}するのだ！` : `アイボ、${said}のだ！`);
   sendAibo(label, cmdType, category, mode);
+}
+
+// 歩く・まわるボタン（速さ・距離・角度は上の選択から）
+const speedName = () => document.getElementById("mvSpeed").selectedOptions[0].textContent;
+function move(label, capability, sign) {
+  const dist = Number(document.getElementById("mvDist").value);
+  const name = `${label}（${speedName()}・${document.getElementById("mvDist").selectedOptions[0].textContent}）`;
+  runCommand(name, capability, { WalkSpeed: Number(document.getElementById("mvSpeed").value), WalkDistance: sign * dist });
+}
+function turn(label, sign) {
+  const angle = Number(document.getElementById("mvAngle").value), speed = Number(document.getElementById("mvSpeed").value);
+  const args = angle > 180 ? [{ TurnSpeed: speed, TurnAngle: sign * 180 }, { TurnSpeed: speed, TurnAngle: sign * 180 }] : { TurnSpeed: speed, TurnAngle: sign * angle };
+  runCommand(`${label}（${speedName()}・${document.getElementById("mvAngle").selectedOptions[0].textContent}）`, "turn_around", args);
+}
+function circle(label, direction) {
+  runCommand(`${label}（${speedName()}）`, "move_along_circle", { WalkSpeed: Number(document.getElementById("mvSpeed").value), Radius: 0.5, MovingAngle: 360, Direction: direction });
+}
+
+// おもちゃボタン（相手は上の選択から）
+function toy(label, capability, extra) {
+  const sel = document.getElementById("toyTarget"), target = sel.value;
+  if (capability === "get_close_to_object" && target === "aibo") { statusBox.innerHTML = "⚠️ 「すぐそばへ」は、ほかのアイボには使えません"; return; }
+  runCommand(sel.selectedOptions[0].textContent + label, capability, { TargetType: target, ...extra });
+}
+
+// 様子を知るボタン：たずねて、答えを日本語で出す
+const JA = {
+  energy: { satisfied: "充電台の上で、満タンです", eating: "充電台の上で、充電中です", enough: "充電台から離れていて、まだ元気に動けます", hungry: "充電台から離れていて、そろそろ充電が必要です", famished: "電池がほとんどなく、動けません" },
+  sleepy: { no_sleepy: "まったく眠くなく、元気です", boring: "退屈しています", sleepy: "眠くなってきました", very_sleepy: "かなり眠く、もう少しで寝そうです" },
+  body: { charge: "充電中", down: "ふせ", lifting_up: "抱き上げられている", Liftup: "抱き上げられ始めた", playing: "全身で動いている", relaxed: "力を抜いている", sit: "おすわり", sleep: "寝ている", stand: "立っている", unknown: "わからない", walking: "歩いている" },
+  part: { belly: "おなか", body: "せなか", chin: "あご", head: "あたま" },
+  dir: { front: "前", right_front: "右前", right: "右", right_back: "右うしろ", left_front: "左前", left: "左", left_back: "左うしろ", back: "うしろ" },
+  dist: { near: "近く", middle: "少し離れた所", far: "遠く" },
+  thing: { person: "人", pinkball: "ピンクボール", aibone: "アイボーン", dice: "サイコロ", aibo: "アイボ", charge_station: "充電台", charging_station: "充電台" },
+  word: { away: "あっちいって", awaysoft: "どいて", bequiet: "しずかにして", bowing: "おじぎして", bringthebone: "ほねとってきて", bye: "ばいばい", come: "おいで", dance: "おどって", down: "おすわり", followme: "ついてきて", goodevening: "こんばんは", goodmorning: "おはよう", goodnight: "おやすみ", gtsy: "はじめまして", hand: "おて", handsup: "てあげて", hello: "こんにちは", highfive: "はいたっち", imhome: "ただいま", kicktheball: "ぼーるけって", lielow: "ふせ", marking: "まーきんぐ", movebackward: "ばっく", openyourmouth: "くちあけて", out: "はなして", pinkball: "ぴんくぼーる", play: "あそぼう", playwithball: "ぼーるであそんで", run: "はしって", shakefullbody: "ぶるぶるして", showyourface: "こっちむいて", sing: "うたって", standup: "おきて", stay: "まて", theotherhand: "おかわり", turn: "まわって", walk: "あるいて" },
+};
+function describeStatus(cap, r) {
+  const v = (r || {})[cap];
+  if (v == null) return "答えがありませんでした";
+  switch (cap) {
+    case "hungry_status": return "🔋 " + (JA.energy[v.energy] || v.energy);
+    case "sleepy_status": return "😪 " + (JA.sleepy[v.status] || v.status);
+    case "posture_status": return "🧍 今は「" + (JA.body[v.body] || v.body) + "」です";
+    case "body_touched_status": return v.body_part ? "✋ 「" + (JA.part[v.body_part] || v.body_part) + "」を触られています" : "✋ どこも触られていません";
+    case "paw_pads_status": {
+      const p = [["front_left", "左前足"], ["front_right", "右前足"], ["back_left", "左後足"], ["back_right", "右後足"]].filter(([k]) => v[k + "_pressed"]).map(([k, n]) => n + "（" + Math.round(v[k + "_pressed_sec"] || 0) + "秒）");
+      return p.length ? "🐾 押されている肉球：" + p.join("、") : "🐾 どの肉球も押されていません";
+    }
+    case "name_called_status": return v.called ? "📣 名前を呼ばれました（" + (JA.dir[v.voiceDirection] || v.voiceDirection) + "から）" : "📣 名前は呼ばれていません";
+    case "found_objects_status": {
+      const list = [].concat(v);
+      return list.length ? "👁️ " + list.map(o => (JA.thing[o.name] || o.name) + "：" + (JA.dir[o.direction] || o.direction) + "の" + (JA.dist[o.distance] || o.distance) + (o.visible ? "（今見えている）" : "（さっき見た）")).join("<br>👁️ ") : "👁️ 何も見つけていません";
+    }
+    case "biting_status": return v.biting ? "🦷 何かをくわえています" : "🦷 何もくわえていません";
+    case "voice_command_status": return v.command ? "💬 「" + (JA.word[v.command] || v.command) + "」に反応しました（" + (JA.dir[v.voiceDirection] || v.voiceDirection) + "から）" : "💬 まだ言葉に反応していません";
+  }
+  return JSON.stringify(v);
+}
+async function askStatus(label, cap) {
+  if (!TOKEN || !DEVICE_ID) { statusBox.innerHTML = "⚙️ 先に下の「設定」でアクセストークンを入れて保存してください"; return; }
+  statusBox.innerHTML = `🔎 aiboに『${label}』をたずねています...`;
+  try {
+    const res = await fetch(`${BASE}/devices/${DEVICE_ID}/capabilities/${cap}/execute`, { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" }, body: "{}" });
+    if (!res.ok) { statusBox.innerHTML = res.status === 401 || res.status === 403 ? "⚠️ アクセストークンが使えません（期限切れかもしれません）" : `⚠️ 通信エラー (${res.status})`; return; }
+    const id = (await res.json()).executionId;
+    for (let i = 0; id && i < 10; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      const r2 = await fetch(`${BASE}/executions/${id}`, { headers: { "Authorization": `Bearer ${TOKEN}` } });
+      if (!r2.ok) continue;
+      const j = await r2.json();
+      if (j.status === "SUCCEEDED") { statusBox.innerHTML = `<b>${label}</b><br>` + describeStatus(cap, j.result); return; }
+      if (j.status === "FAILED") { statusBox.innerHTML = `😴 『${label}』がわかりませんでした。aiboが寝ていないか確かめてください`; return; }
+    }
+    statusBox.innerHTML = `⏳ 『${label}』の答えがまだ来ません。少ししてからもう一度押してください`;
+  } catch (e) { statusBox.innerHTML = "⚠️ 通信に失敗しました"; }
 }
 
 // 言葉から判定する関数
@@ -178,6 +372,8 @@ function processVoiceText(text) {
 }
 
 // ほかの動き（aiboに「使える動き」をたずねて出てきた一覧。日本語は推測）
+// ふるまい（ひと続きの動作）。aiboが覚えているものだけ動く（公式の TrickName 一覧）
+const TRICKS = [["スクワットしよう","aiboSquat"],["ハッピーバースデー","happyBirthday"],["幸せなら手をたたこう","ifYoureHappyAndYouKnowIt"],["ロンドン橋落ちた","londonBridgeIsFallingDown"],["ラジオ体操第一","radioExerciseNo1"],["とってもかわいいaibo","veryLovelyAibo"],["花のワルツ","waltzOfTheFlowers"],["aibo3分タイマー（止めるときは「おしまい」）","3minuteTimer"]];
 const MORE = [
   ["🔊 鳴き声・声", [["ワン（太い声）","woof"],["キャンキャン","yap"],["クーン","whine"],["くしゃみ","sneeze"],["げっぷ","belch"],["あくび","yawn"],["息をする","breath"],["ハッとする","gasp"],["寝言","sleepTalking"]]],
   ["😊 気持ち・反応", [["賛成","agree"],["しょんぼり","bad"],["首を横に振る","shakeHead"],["うなずく","nodHead"],["首をかしげる","curious"],["気づく","perceive"],["少しびっくり","startledLittle"],["びっくり","startled"],["さわられた","touched"],["うれしい・暑い","happyOrHot"],["こんにちは大好き","helloIloveYou"],["なかよくしよう","imFriendly"],["なかよし","friendly"],["ていねいにあいさつ","friendlyPolite"],["おねだり","prettyPlease"],["そわそわ","restless"],["ぶるっと震える","shudder"],["待っている","waiting"],["準備オーケー","ready"],["うとうと","halfAsleep"],["夢を見る","dreaming"],["くつろぐ","relax"]]],
@@ -185,6 +381,15 @@ const MORE = [
   ["🐾 体の動き・芸", [["ピース","peace"],["ハイタッチ","highFive"],["おいでおいで","beckon"],["横にキック","sideKick"],["横向きに起きる","sideUp"],["背中を丸める","bentBack"],["伸び","stretch"],["体を揺らす","swing"],["おしりを振る","shakeHipsBehind"],["小刻みに揺れる","jiggle"],["じゃれてかむ","playBiting"],["背中をこすりつける","rubBack"],["体をなめる","lickBody"],["床をかく","scratchFloor"],["頭をかく","scratchHead"],["マーキング","marking"],["水を飲む","drinkWater"],["ごはんを食べる","eatDryFood"],["骨を投げる（アイボーンが要るかも）","throwBone"],["サイコロを投げる（サイコロが要るかも）","throwDice"]]],
 ];
 const moreBox = document.getElementById("more");
+const th = document.createElement("h3"); th.textContent = "🎶 ふるまい（歌とダンス）"; moreBox.appendChild(th);
+const tg = document.createElement("div"); tg.className = "grid";
+TRICKS.forEach(([label, code]) => {
+  const b = document.createElement("button"); b.className = "sub-btn trick";
+  b.innerHTML = label + "<small>" + code + "</small>";
+  b.onclick = () => runCommand(label, "trick", code);
+  tg.appendChild(b);
+});
+moreBox.appendChild(tg);
 MORE.forEach(([title, items]) => {
   const h = document.createElement("h3"); h.textContent = title; moreBox.appendChild(h);
   const g = document.createElement("div"); g.className = "grid";
