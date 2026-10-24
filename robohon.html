@@ -48,6 +48,7 @@
     <select id="gesture"><option value="">身ぶりなし</option></select>
     <button class="sub-btn" onclick="speakText()">🗣 しゃべる</button>
   </div>
+  <button id="micBtn" class="sub-btn" style="width:100%; margin-top:8px; background:#ff4b4b; font-size:20px; padding:16px">🎤 押して話しかける（ロボホンが同じ言葉をしゃべります）</button>
 
   <p style="font-size:14px; color:#666; margin-top:20px;">👇 よく使うボタン</p>
   <div class="grid">
@@ -70,6 +71,10 @@
   <h2>🎤 カラオケ（ロボホンが歌う）</h2>
   <div id="lyrics" class="lyrics">曲のボタンを押すと、ここに歌詞が出ます</div>
   <div class="grid" id="karaoke"></div>
+
+  <h2>🚶 歩く・回る</h2>
+  <p class="note">ロボホンを<b>床に置いて</b>、まわりを空けてから押してください。机の上では使わないでください。</p>
+  <div class="grid" id="walk"></div>
 
   <h2>🗣 方言でしゃべる</h2>
   <p class="note">声の上がり下がりを付けて、方言らしく言います。抑揚は「それらしく」付けたものです。</p>
@@ -183,7 +188,7 @@ async function run(label, cmd, ...args) {
 const W = "0x7f042f13";  // 振り付けの中の「待つ」
 const KURI_MOVES = ["0x060001", W, W, W, W, "0x06001e", W, "0x06001d", W, W, "0x06001f", W, W, W, W, "0x060001", W, W, W, W];  // バンザイ・あなた・わたし・手をふる・バンザイ
 const KARAOKE = [
-  { title: "大きな栗の木の下で", file: "kuri2.wav", length: 48,
+  { title: "大きな栗の木の下で", voices: [["ずんだもん", "kuri2.wav"], ["四国めたん", "kuri2_metan.wav"], ["青山龍星", "kuri2_ryusei5.wav"]], length: 48,
     moves: [W, ...KURI_MOVES, W, ...KURI_MOVES], waitMs: 1030,
     lyrics: [[1.5, "おおきな くりの きのしたで"], [6.95, "あなたと わたし"], [12.41, "なかよく あそびましょう"], [17.86, "おおきな くりの きのしたで"],
              [24.68, "おおきな くりの きのしたで"], [30.14, "あなたと わたし"], [35.59, "なかよく あそびましょう"], [41.05, "おおきな くりの きのしたで"]] },
@@ -191,12 +196,12 @@ const KARAOKE = [
 const lyricsBox = document.getElementById("lyrics");
 const send = (cmd, ...args) => api("/api/send?cmd=" + encodeURIComponent(cmd) + args.map(a => "&a=" + encodeURIComponent(a)).join(""));
 
-async function karaoke(song) {
+async function karaoke(song, file) {
   // 歌う前に、曲名を言って「いち、に、さん」と数える
   await run(song.title + "（はじめのあいさつ）", "speech", `${song.title}を、歌うよ。いち、に、さん！`);
   if (!statusBox.textContent.includes("終わりました")) return;  // 失敗したか、止められた
   const my = ++running;
-  const r = await send("playBGM", song.file);
+  const r = await send("playBGM", file);
   if (!r.ok) { statusBox.innerHTML = `⚠️ ${r.error}`; return; }
   const t0 = Date.now();
   // 振り付けは、歌声が始まる前に1回でまとめて送る（あとから1つずつ送ると断られるため）
@@ -249,6 +254,16 @@ const DIALECTS = [
     ["どさ？ ゆさ", "どこへ？ お風呂へ", "100:ど 150:さ？、 120:ゆ 90:さ"],
     ["いがったなあ", "よかったなあ", "95:い 120:がっ 110:た 135:なあ"],
   ]],
+  ["🍜 博多弁", [
+    ["なんしよーと？", "何してるの？", "110:なん 145:しよー 120:と？"],
+    ["よかよか", "いいよいいよ", "140:よか 100:よか"],
+    ["すいとーよ", "好きだよ", "100:すい 150:とー 110:よ"],
+    ["ばりうまか", "すごくおいしい", "145:ばり 115:うま 95:か"],
+    ["よかろーもん", "いいでしょう", "110:よか 145:ろー 100:もん"],
+    ["この席、とっとーと？", "取ってるの？ 取ってるよ", "100:このせき、 105:とっ 150:とー 125:と？。 110:とっ 130:とー 85:と"],
+    ["なんば言いよっとね", "何を言ってるの", "115:なんば 140:いいよっ 110:と 95:ね"],
+    ["あーね", "ああ、そうなんだ", "140:あー 95:ね"],
+  ]],
 ];
 const toVtml = s => s.split(" ").map(p => { const [v, w] = p.split(":"); return `<vtml_pitch value="${v}">${w}</vtml_pitch>`; }).join("");
 DIALECTS.forEach(([title, lines]) => {
@@ -263,11 +278,22 @@ DIALECTS.forEach(([title, lines]) => {
   document.getElementById("dialects").appendChild(g);
 });
 
-KARAOKE.forEach(song => {
-  const b = document.createElement("button"); b.className = "sub-btn sing";
-  b.textContent = "🎤 " + song.title; b.onclick = () => karaoke(song);
-  document.getElementById("karaoke").appendChild(b);
+// 歩く・回る（ロブリックの stepMotion。2026-10-25 に前へ1歩・右に回るをロボホンで確認）
+[["前へ 1歩", "1", "歩、前へ歩く"], ["前へ 3歩", "3", "歩、前へ歩く"], ["後ろへ 1歩", "1", "歩、後ろへ歩く"], ["後ろへ 3歩", "3", "歩、後ろへ歩く"],
+ ["右に少し回る（約20度）", "1", "回、右に回る"], ["左に少し回る（約20度）", "1", "回、左に回る"],
+ ["右を向く（約90度）", "4", "回、右に回る"], ["左を向く（約90度）", "4", "回、左に回る"]].forEach(([label, steps, kind]) => {  // 1回で約20度（ユーザーが目で見た）
+  const b = document.createElement("button"); b.className = "sub-btn posture";
+  b.textContent = label; b.onclick = () => run(label, "stepMotion", steps, kind);
+  document.getElementById("walk").appendChild(b);
 });
+
+// 1曲につき、歌う声ごとにボタンを作る
+KARAOKE.forEach(song => song.voices.forEach(([voice, file]) => {
+  const b = document.createElement("button"); b.className = "sub-btn sing";
+  b.innerHTML = "🎤 " + song.title + "<small style='display:block;font-size:13px'>" + voice + "</small>";
+  b.onclick = () => karaoke(song, file);
+  document.getElementById("karaoke").appendChild(b);
+}));
 
 async function stopAll() {
   running++;
@@ -280,6 +306,20 @@ function speakText() {
   const t = document.getElementById("text").value.trim(), g = document.getElementById("gesture").value;
   if (!t) { statusBox.innerHTML = "✏️ しゃべらせる言葉を入れてください"; return; }
   if (g) run(`「${t}」（${g}）`, "speakmove", t, g); else run(`「${t}」`, "speech", t);
+}
+
+// 話しかけた言葉を文字にして、そのままロボホンにしゃべらせる（Chromeの音声認識）
+const micBtn = document.getElementById("micBtn");
+const MIC_LABEL = micBtn.textContent;
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRecognition) {
+  const rec = new SpeechRecognition(); rec.lang = "ja-JP"; rec.interimResults = false;
+  micBtn.onclick = () => { rec.start(); micBtn.style.background = "#28a745"; micBtn.textContent = "🔴 聞いています…どうぞお話しください"; };
+  rec.onresult = (e) => { document.getElementById("text").value = e.results[0][0].transcript; speakText(); };
+  rec.onend = () => { micBtn.style.background = "#ff4b4b"; micBtn.textContent = MIC_LABEL; };
+  rec.onerror = () => { statusBox.innerHTML = "⚠️ 聞き取れませんでした。もう一度押して話しかけてください（LINEの中ではなく、Chromeで開いてください）"; };
+} else {
+  micBtn.style.display = "none";
 }
 
 // ボタンの並びを作る
