@@ -41,8 +41,8 @@
     <button class="sub-btn posture" onclick="runCommand('立つ', 'posture', 'stand')">🐕 立つ</button>
     <button class="sub-btn" onclick="runCommand('万歳', 'motion', 'handsUp')">🙌 万歳</button>
     <button class="sub-btn" onclick="runCommand('お手', 'motion', 'paw', 'BODY_LEFT')">🐾 お手</button>
-    <button class="sub-btn" onclick="runCommand('ピース', 'motion', 'peace')">✌️ ピース</button>
-    <button class="sub-btn" onclick="runCommand('喜ぶ', 'motion', 'friendly', 'BODY_BOTH')">😊 喜ぶ</button>
+    <button class="sub-btn" onclick="runCommand('喜ぶ', 'motion', 'overJoyed')">😊 喜ぶ</button>
+    <button class="sub-btn" onclick="runCommand('歌う', 'motion', 'sing')">🎵 歌う</button>
     <button class="sub-btn" onclick="runCommand('吠える', 'motion', 'bark')">🔊 ワンと鳴く</button>
     <button class="sub-btn" onclick="runCommand('ダンス', 'motion', 'dance')">💃 ダンス</button>
   </div>
@@ -161,13 +161,13 @@ function runCommand(label, cmdType, category, mode = "NONE") {
 function processVoiceText(text) {
   statusBox.innerHTML = `💬 聞き取った言葉：<b>「${text}」</b>`;
   if (/ただいま|帰った|万歳|バンザイ|ばんざい/.test(text)) { speakReply("おかえりなさいなのだ！アイボと一緒にバンザイして喜ぶのだ！"); sendAibo("万歳", "motion", "handsUp"); }
-  else if (/お母さん|おかあさん|ママ|喜|好き|かわいい/.test(text)) { speakReply("お母さん大好き！アイボもとっても喜んでいるよ！"); sendAibo("喜ぶ", "motion", "friendly", "BODY_BOTH"); }
+  else if (/お母さん|おかあさん|ママ|喜|好き|かわいい/.test(text)) { speakReply("お母さん大好き！アイボもとっても喜んでいるよ！"); sendAibo("喜ぶ", "motion", "overJoyed"); }
   else if (/散歩|さんぽ|お出かけ|行こう|ワン|鳴/.test(text)) { speakReply("やったー！お散歩に行くのだ！アイボ、元気よくワンと鳴くのだ！"); sendAibo("ワンと鳴く", "motion", "bark"); }
   else if (/お手|おて|タッチ/.test(text)) { speakReply("アイボ、上手にお手をするのだ！"); sendAibo("お手", "motion", "paw", "BODY_LEFT"); }
-  else if (/ピース|写真|チーズ/.test(text)) { speakReply("はいチーズ！アイボも可愛くピースするよ！"); sendAibo("ピース", "motion", "peace"); }
   else if (/おすわり|座|待て/.test(text)) { speakReply("アイボ、ちゃんとおすわりして待つんだよ！"); sendAibo("おすわり", "posture", "sit"); }
   else if (/立|起/.test(text)) { speakReply("アイボ、元気に立ち上がるのだ！"); sendAibo("立つ", "posture", "stand"); }
-  else if (/ダンス|踊|歌/.test(text)) { speakReply("みんなで楽しくダンスして盛り上がるのだ！"); sendAibo("ダンス", "motion", "dance"); }
+  else if (/歌|うた/.test(text)) { speakReply("アイボ、元気よく歌うのだ！"); sendAibo("歌う", "motion", "sing"); }
+  else if (/ダンス|踊/.test(text)) { speakReply("みんなで楽しくダンスして盛り上がるのだ！"); sendAibo("ダンス", "motion", "dance"); }
   else { speakReply(`${text}って言ったのだ？アイボが首をかしげているよ！`); sendAibo("首をかしげる", "motion", "curious", "BODY_BOTH"); }
 }
 
