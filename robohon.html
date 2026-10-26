@@ -23,6 +23,9 @@
   .ok { color: #1b8a3a; } .ng { color: #c62828; }
   #top { position: sticky; top: 8px; z-index: 5; background: white; border-radius: 12px; }
   #top .status-box { margin: 0; }
+  .places { display: flex; gap: 6px; margin-top: 6px; }
+  .places button { flex: 1; font-size: 14px; font-weight: bold; padding: 6px 2px; border-radius: 10px; border: 2px solid #94a3b8; background: #f1f5f9; color: #475569; cursor: pointer; }
+  .places button.on { background: #16a34a; border-color: #16a34a; color: white; }
   h2 { color: #b45309; font-size: 20px; text-align: left; margin: 30px 0 0; }
   h3 { color: #b45309; font-size: 18px; text-align: left; margin: 22px 0 0; border-bottom: 2px solid #f59e0b; }
   .sub-btn.more { background: #f59e0b; font-size: 16px; padding: 12px 6px; }
@@ -62,6 +65,7 @@
   <div id="top">
     <div id="status" class="status-box">ボタンを押すとロボホンが動きます</div>
     <button class="sub-btn stop" onclick="stopAll()">⏹ 止める</button>
+    <div class="places" id="places"></div>
   </div>
 
   <div id="main">
@@ -125,9 +129,14 @@
 
 <div class="card">
   <h1 style="font-size:20px">⚙️ 設定</h1>
-  <p class="note">この携帯とロボホンを<b>同じ家のWi-Fi</b>につなぎ、ロボホンで<b>ロブリック</b>を起動してから使います。</p>
-  <label for="ip">ロボホンの住所（IPアドレス）</label>
-  <input id="ip" inputmode="decimal" placeholder="192.168.0.195">
+  <p class="note">この携帯とロボホンを<b>同じWi-Fi</b>（家・テザリング・ポケットWi-Fi）につなぎ、ロボホンで<b>ロブリック</b>を起動してから使います。</p>
+  <p class="note">つなぐWi-Fiが変わると、ロボホンの住所も変わります。ロボホンの「設定」→「端末情報」の<b>Wi-Fi IPアドレス</b>を、場所ごとに1回ずつ入れて保存してください。使わない場所は空のままでかまいません。外では、いちばん上のボタンで場所を切り替えます。</p>
+  <label for="ip_home">🏠 家の住所</label>
+  <input id="ip_home" inputmode="decimal" placeholder="192.168.0.195">
+  <label for="ip_tether">📱 テザリングのときの住所</label>
+  <input id="ip_tether" inputmode="decimal" placeholder="例：192.168.43.25">
+  <label for="ip_pocket">👜 ポケットWi-Fiのときの住所</label>
+  <input id="ip_pocket" inputmode="decimal" placeholder="例：192.168.128.101">
   <div class="row">
     <button class="sub-btn" onclick="saveIp()">💾 保存する</button>
     <button class="sub-btn posture" onclick="checkRobot()">🔍 つながるか確かめる</button>
@@ -161,8 +170,27 @@ GESTURES.forEach(g => { const o = document.createElement("option"); o.value = o.
 
 function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
 function store(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
-let IP = load("robohon_ip") || "192.168.0.195";
-document.getElementById("ip").value = IP;
+// 住所は場所ごとに覚える。家は前からの robohon_ip をそのまま使う（今までの保存を消さないため）
+const PLACES = [["home", "🏠 家", "robohon_ip"], ["tether", "📱 テザリング", "robohon_ip_tether"], ["pocket", "👜 ポケット", "robohon_ip_pocket"]];
+PLACES.forEach(([p, , key]) => { document.getElementById("ip_" + p).value = load(key) || (p === "home" ? "192.168.0.195" : ""); });
+let PLACE = load("robohon_place") || "home";
+let IP = "";
+function usePlace(p) {
+  const [, label, key] = PLACES.find(x => x[0] === p) || PLACES[0];
+  PLACE = p; store("robohon_place", p);
+  IP = load(key) || (p === "home" ? "192.168.0.195" : "");
+  document.querySelectorAll("#places button").forEach(b => b.classList.toggle("on", b.dataset.place === p));
+  return { label, ok: !!IP };
+}
+PLACES.forEach(([p, label]) => {
+  const b = document.createElement("button"); b.dataset.place = p; b.textContent = label;
+  b.onclick = () => {
+    const r = usePlace(p);
+    statusBox.innerHTML = r.ok ? `${r.label}のロボホン（${IP}）に送ります` : `⚙️ ${r.label}の住所がまだ入っていません。下の「設定」で入れて保存してください`;
+  };
+  document.getElementById("places").appendChild(b);
+});
+usePlace(PLACE);
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("robohon-sw.js", { scope: "robohon.html" }).catch(() => {});
 
 const ERRORS = { MannerOn: "ロボホンがマナーモードです。解除してください", InUse: "ほかの端末がロブリックを使っています", StandAlone: "ロボホンのロブリックが待ち受け状態ではありません", NoLicence: "ロブリックのライセンスがありません", InvalidValue: "命令の内容が正しくありません" };
@@ -191,16 +219,25 @@ async function api(path) {
   return { ok: false, error: "使えない命令です" };
 }
 function saveIp() {
-  const v = document.getElementById("ip").value.trim(), msg = document.getElementById("setMsg");
-  if (!/^\d+\.\d+\.\d+\.\d+$/.test(v)) { msg.innerHTML = '<span class="ng">192.168.0.195 のような数字で入れてください</span>'; return; }
-  IP = v;
-  msg.innerHTML = store("robohon_ip", v) ? '<span class="ok">保存しました</span>' : '<span class="ng">保存できませんでした（このページを開いている間だけ使えます）</span>';
+  const msg = document.getElementById("setMsg");
+  let saved = true;
+  for (const [p, label, key] of PLACES) {
+    const v = document.getElementById("ip_" + p).value.trim();
+    if (v && !/^\d+\.\d+\.\d+\.\d+$/.test(v)) { msg.innerHTML = `<span class="ng">${label}の住所は 192.168.0.195 のような数字で入れてください</span>`; return false; }
+    if (p === "home" && !v) { msg.innerHTML = '<span class="ng">🏠 家の住所は空にできません</span>'; return false; }
+    saved = store(key, v) && saved;
+  }
+  usePlace(PLACE);
+  msg.innerHTML = saved ? '<span class="ok">保存しました</span>' : '<span class="ng">保存できませんでした（このページを開いている間だけ使えます）</span>';
+  return true;
 }
 async function checkRobot() {
-  saveIp();
-  const msg = document.getElementById("setMsg"); msg.textContent = "確かめています…";
+  if (!saveIp()) return;
+  const msg = document.getElementById("setMsg"), label = PLACES.find(x => x[0] === PLACE)[1];
+  if (!IP) { msg.innerHTML = `<span class="ng">${label}の住所が入っていません</span>`; return; }
+  msg.textContent = `${label}（${IP}）を確かめています…`;
   const p = await api("/api/poll");
-  msg.innerHTML = p.ok ? '<span class="ok">✅ ロボホンにつながりました</span>' : '<span class="ng">' + p.error + '</span>';
+  msg.innerHTML = p.ok ? `<span class="ok">✅ ${label}でロボホンにつながりました</span>` : '<span class="ng">' + p.error + '</span>';
 }
 
 let running = 0;
