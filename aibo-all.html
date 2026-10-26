@@ -46,11 +46,9 @@
 
 <div class="card" id="remote">
   <h1>🐕 aibo 全部リモコン</h1>
-  <p style="font-size:16px; color:#555;">赤いボタンを押して<b>「ただいま」「お母さん」「お散歩」「お手」</b>と話しかけてください</p>
-  <button id="micBtn" class="mic-btn">🎤 押して話しかける</button>
-  <div id="status" class="status-box">ここに聞き取った言葉が出ます</div>
-  <p style="font-size:14px; color:#666; margin-top:25px;">👇 ボタンを押すだけでも動きます</p>
-  <div class="grid">
+  <div id="status" class="status-box">ボタンを押すとアイボが動きます</div>
+  <h3>−1 ⭐ よく使うボタン</h3>
+  <div class="grid" style="margin-top:8px">
     <button class="sub-btn posture" onclick="runCommand('おすわり', 'posture', 'sit')">🪑 おすわり</button>
     <button class="sub-btn posture" onclick="runCommand('立つ', 'posture', 'stand')">🐕 立つ</button>
     <button class="sub-btn" onclick="runCommand('万歳', 'motion', 'handsUp')">🙌 万歳</button>
@@ -60,7 +58,7 @@
     <button class="sub-btn" onclick="runCommand('吠える', 'motion', 'bark')">🔊 ワンと鳴く</button>
     <button class="sub-btn" onclick="runCommand('ダンス', 'motion', 'dance')">💃 ダンス</button>
   </div>
-  <h3>🚶 歩く・まわる</h3>
+  <h3>⓪ 🚶 歩く・まわる</h3>
   <p class="note" style="margin:8px 0 0">広い床で使ってください。段差や机の上では使わないでください。</p>
   <div class="grid" style="margin-top:8px">
     <label>速さ<select id="mvSpeed"><option value="0">ゆっくり</option><option value="1" selected>ふつう</option><option value="2">はやく</option></select></label>
@@ -78,6 +76,25 @@
     <button class="sub-btn move" onclick="circle('右回りに輪を描く', 'right')">🔃 右回りに輪</button>
   </div>
   <p class="note">「輪」は半径50cmの輪を1周歩きます。</p>
+  <p class="note" style="margin-top:20px">👇 ①〜④の名前は英語の名前からの<b>推測</b>なので、実際の動きと違うことがあります。<b>1つ押したら、動き終わるまで待ってから</b>次を押してください。</p>
+  <div id="moreTop"></div>
+
+  <h3>⑤ 🙂 首を動かす</h3>
+  <div class="grid" style="margin-top:8px; grid-template-columns: repeat(3, 1fr)">
+    <span></span>
+    <button class="sub-btn head" onclick="runCommand('上を向く', 'move_head', { Azimuth: 0, Elevation: 30, Velocity: 40 })">⬆️ 上</button>
+    <span></span>
+    <button class="sub-btn head" onclick="runCommand('左を向く', 'move_head', { Azimuth: 60, Elevation: 0, Velocity: 40 })">⬅️ 左</button>
+    <button class="sub-btn head" onclick="runCommand('正面を向く', 'move_head', { Azimuth: 0, Elevation: 0, Velocity: 40 })">⏺️ 正面</button>
+    <button class="sub-btn head" onclick="runCommand('右を向く', 'move_head', { Azimuth: -60, Elevation: 0, Velocity: 40 })">➡️ 右</button>
+    <span></span>
+    <button class="sub-btn head" onclick="runCommand('下を向く', 'move_head', { Azimuth: 0, Elevation: -30, Velocity: 40 })">⬇️ 下</button>
+    <span></span>
+  </div>
+
+  <h3>🎤 話しかける</h3>
+  <p style="font-size:16px; color:#555; text-align:left">赤いボタンを押して<b>「ただいま」「お母さん」「お散歩」「お手」</b>と話しかけてください。聞き取った言葉は一番上の欄に出ます。</p>
+  <button id="micBtn" class="mic-btn">🎤 押して話しかける</button>
   <h3>🧑 人をさがす・近づく</h3>
   <div class="grid" style="margin-top:8px">
     <label>近づく距離<select id="psDist"><option value="0.4">40cm</option><option value="0.5" selected>50cm</option><option value="1">1m</option><option value="2">2m</option></select></label>
@@ -122,19 +139,6 @@
   </div>
   <p class="note">場所へ行けないときは、先に「地図を思い出す」を押してください。おむかえ場所・トイレは、アプリで教えてある場合だけ行けます。</p>
 
-  <h3>🙂 首を動かす</h3>
-  <div class="grid" style="margin-top:8px; grid-template-columns: repeat(3, 1fr)">
-    <span></span>
-    <button class="sub-btn head" onclick="runCommand('上を向く', 'move_head', { Azimuth: 0, Elevation: 30, Velocity: 40 })">⬆️ 上</button>
-    <span></span>
-    <button class="sub-btn head" onclick="runCommand('左を向く', 'move_head', { Azimuth: 60, Elevation: 0, Velocity: 40 })">⬅️ 左</button>
-    <button class="sub-btn head" onclick="runCommand('正面を向く', 'move_head', { Azimuth: 0, Elevation: 0, Velocity: 40 })">⏺️ 正面</button>
-    <button class="sub-btn head" onclick="runCommand('右を向く', 'move_head', { Azimuth: -60, Elevation: 0, Velocity: 40 })">➡️ 右</button>
-    <span></span>
-    <button class="sub-btn head" onclick="runCommand('下を向く', 'move_head', { Azimuth: 0, Elevation: -30, Velocity: 40 })">⬇️ 下</button>
-    <span></span>
-  </div>
-
   <h3>⏸️ 待つ・指示待ち</h3>
   <div class="grid" style="margin-top:8px">
     <button class="sub-btn wait" onclick="runCommand('30秒待つ', 'stay', { Duration: 30 })">⏳ 30秒待つ</button>
@@ -157,7 +161,6 @@
     <button class="sub-btn info" onclick="askStatus('くわえているか', 'biting_status')">🦷 くわえているか</button>
     <button class="sub-btn info" style="grid-column: span 2" onclick="askStatus('反応した言葉', 'voice_command_status')">💬 反応した言葉</button>
   </div>
-  <p class="note" style="margin-top:24px">👇 ここから下は、aiboに入っているほかの動きです。名前は英語の名前からの<b>推測</b>なので、実際の動きと違うことがあります。<b>1つ押したら、動き終わるまで待ってから</b>次を押してください。</p>
   <div id="more"></div>
 </div>
 
@@ -385,21 +388,23 @@ const th = document.createElement("h3"); th.textContent = "🎶 ふるまい（�
 const tg = document.createElement("div"); tg.className = "grid";
 TRICKS.forEach(([label, code]) => {
   const b = document.createElement("button"); b.className = "sub-btn trick";
-  b.innerHTML = label + "<small>" + code + "</small>";
+  b.textContent = label;
   b.onclick = () => runCommand(label, "trick", code);
   tg.appendChild(b);
 });
 moreBox.appendChild(tg);
-MORE.forEach(([title, items]) => {
-  const h = document.createElement("h3"); h.textContent = title; moreBox.appendChild(h);
-  const g = document.createElement("div"); g.className = "grid";
+// ①〜④は「歩く・まわる」のすぐ下に出す（コントの相づちで使うため）
+const moreTop = document.getElementById("moreTop");
+MORE.forEach(([title, items], n) => {
+  const h = document.createElement("h3"); h.textContent = "①②③④"[n] + " " + title; moreTop.appendChild(h);
+  const g = document.createElement("div"); g.className = "grid"; g.style.marginTop = "8px";
   items.forEach(([label, code]) => {
     const b = document.createElement("button"); b.className = "sub-btn more";
-    b.innerHTML = label + "<small>" + code + "</small>";
+    b.textContent = label;
     b.onclick = () => runCommand(label, "motion", code);
     g.appendChild(b);
   });
-  moreBox.appendChild(g);
+  moreTop.appendChild(g);
 });
 
 // 音声認識の準備
