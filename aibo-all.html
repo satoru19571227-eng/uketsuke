@@ -40,6 +40,32 @@
   .sub-btn.trick { background: #db2777; font-size: 16px; padding: 12px 6px; }
   .sub-btn.trick small { display: block; font-size: 11px; font-weight: normal; opacity: 0.9; }
   .sub-btn.more small { display: block; font-size: 11px; font-weight: normal; opacity: 0.9; }
+  /* 携帯：−1〜⑤を上から順に1列（左右の列の箱はないものとして並べる） */
+  #main { display: flex; flex-direction: column; }
+  #main .col { display: contents; }
+  #sM1 { order: 1; } #s0 { order: 2; } #s1 { order: 3; } #s2 { order: 4; } #s3 { order: 5; } #s4 { order: 6; } #s5 { order: 7; }
+  .grid.sel .angle { grid-column: span 2; }
+  /* タブレット：左に −1 ⓪ ① ③ ⑤、右に ② ④ で1画面 */
+  @media (min-width: 600px) {
+    .card { max-width: 1100px; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    #status { min-height: 0; padding: 8px 12px; margin: 6px 0; font-size: 16px; }
+    #main { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; align-items: start; }
+    #main .col { display: block; }
+    #main h3 { margin-top: 12px; font-size: 16px; }
+    #main .grid { grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 5px !important; }
+    #main .sub-btn { font-size: 13px; padding: 6px 2px; }
+    /* 首は1行に「左 上 正面 下 右」 */
+    #s5 .grid { grid-template-columns: repeat(5, 1fr) !important; }
+    #s5 .grid span, #s0 .wa { display: none; }
+    #s5 .grid button:nth-of-type(1) { order: 2; } #s5 .grid button:nth-of-type(2) { order: 1; } #s5 .grid button:nth-of-type(3) { order: 3; }
+    #s5 .grid button:nth-of-type(4) { order: 5; } #s5 .grid button:nth-of-type(5) { order: 4; }
+    #main .note { font-size: 12px; line-height: 1.4; margin: 4px 0 0 !important; }
+    #main .guess { display: none; }
+    .grid.sel .angle { grid-column: auto; }
+    #main select { font-size: 14px; padding: 4px; margin: 2px 0 4px; }
+    #main label { font-size: 13px; }
+  }
 </style>
 </head>
 <body>
@@ -47,6 +73,9 @@
 <div class="card" id="remote">
   <h1>🐕 aibo 全部リモコン</h1>
   <div id="status" class="status-box">ボタンを押すとアイボが動きます</div>
+  <!-- −1〜⑤。携帯は上から順に1列、タブレットは左右2列（左 −1 ⓪ ① ③ ⑤、右 ② ④）で1画面 -->
+  <div id="main"><div class="col">
+  <section id="sM1">
   <h3>−1 ⭐ よく使うボタン</h3>
   <div class="grid" style="margin-top:8px">
     <button class="sub-btn posture" onclick="runCommand('おすわり', 'posture', 'sit')">🪑 おすわり</button>
@@ -58,13 +87,15 @@
     <button class="sub-btn" onclick="runCommand('吠える', 'motion', 'bark')">🔊 ワンと鳴く</button>
     <button class="sub-btn" onclick="runCommand('ダンス', 'motion', 'dance')">💃 ダンス</button>
   </div>
+  </section>
+  <section id="s0">
   <h3>⓪ 🚶 歩く・まわる</h3>
   <p class="note" style="margin:8px 0 0">広い床で使ってください。段差や机の上では使わないでください。</p>
-  <div class="grid" style="margin-top:8px">
+  <div class="grid sel" style="margin-top:8px">
     <label>速さ<select id="mvSpeed"><option value="0">ゆっくり</option><option value="1" selected>ふつう</option><option value="2">はやく</option></select></label>
     <label>距離<select id="mvDist"><option value="0.3">30cm</option><option value="0.5" selected>50cm</option><option value="1">1m</option><option value="2">2m</option></select></label>
+    <label class="angle">まわる角度<select id="mvAngle"><option value="45">45°（少し）</option><option value="90" selected>90°（横向き）</option><option value="180">180°（うしろ向き）</option><option value="360">1回転</option></select></label>
   </div>
-  <label>まわる角度<select id="mvAngle"><option value="45">45°（少し）</option><option value="90" selected>90°（横向き）</option><option value="180">180°（うしろ向き）</option><option value="360">1回転</option></select></label>
   <div class="grid" style="margin-top:0">
     <button class="sub-btn move" onclick="move('前へ歩く', 'move_forward', 1)">⬆️ 前へ</button>
     <button class="sub-btn move" onclick="move('後ろへ歩く', 'move_forward', -1)">⬇️ 後ろへ</button>
@@ -75,10 +106,11 @@
     <button class="sub-btn move" onclick="circle('左回りに輪を描く', 'left')">🔄 左回りに輪</button>
     <button class="sub-btn move" onclick="circle('右回りに輪を描く', 'right')">🔃 右回りに輪</button>
   </div>
-  <p class="note">「輪」は半径50cmの輪を1周歩きます。</p>
-  <p class="note" style="margin-top:20px">👇 ①〜④の名前は英語の名前からの<b>推測</b>なので、実際の動きと違うことがあります。<b>1つ押したら、動き終わるまで待ってから</b>次を押してください。</p>
-  <div id="moreTop"></div>
-
+  <p class="note wa">「輪」は半径50cmの輪を1周歩きます。</p>
+  </section>
+  <section id="s1"><p class="note guess" style="margin-top:20px">👇 ①〜④の名前は英語の名前からの<b>推測</b>なので、実際の動きと違うことがあります。<b>1つ押したら、動き終わるまで待ってから</b>次を押してください。</p></section>
+  <section id="s3"></section>
+  <section id="s5">
   <h3>⑤ 🙂 首を動かす</h3>
   <div class="grid" style="margin-top:8px; grid-template-columns: repeat(3, 1fr)">
     <span></span>
@@ -91,6 +123,12 @@
     <button class="sub-btn head" onclick="runCommand('下を向く', 'move_head', { Azimuth: 0, Elevation: -30, Velocity: 40 })">⬇️ 下</button>
     <span></span>
   </div>
+  </section>
+  </div>
+  <div class="col">
+  <section id="s2"></section>
+  <section id="s4"></section>
+  </div></div>
 
   <h3>🎤 話しかける</h3>
   <p style="font-size:16px; color:#555; text-align:left">赤いボタンを押して<b>「ただいま」「お母さん」「お散歩」「お手」</b>と話しかけてください。聞き取った言葉は一番上の欄に出ます。</p>
@@ -394,8 +432,8 @@ TRICKS.forEach(([label, code]) => {
 });
 moreBox.appendChild(tg);
 // ①〜④は「歩く・まわる」のすぐ下に出す（コントの相づちで使うため）
-const moreTop = document.getElementById("moreTop");
 MORE.forEach(([title, items], n) => {
+  const moreTop = document.getElementById("s" + (n + 1));
   const h = document.createElement("h3"); h.textContent = "①②③④"[n] + " " + title; moreTop.appendChild(h);
   const g = document.createElement("div"); g.className = "grid"; g.style.marginTop = "8px";
   items.forEach(([label, code]) => {
