@@ -38,13 +38,17 @@
   textarea { width: 100%; box-sizing: border-box; font-size: 18px; font-family: inherit; padding: 10px 52px 10px 10px; border: 1px solid #999; border-radius: 8px; resize: none; line-height: 1.5; }
   .clear { position: absolute; top: 6px; right: 6px; width: 40px; height: 40px; border: none; border-radius: 50%; background: #9ca3af; color: white; font-size: 24px; line-height: 40px; padding: 0; cursor: pointer; }
   .sub-btn.gest { background: #8b5cf6; font-size: 16px; padding: 12px 6px; }
-  /* タブレット：①②③を1画面に（左に①と③、右に②） */
+  /* タブレット：①を上に横いっぱい、その下に左③・右② で1画面に */
   @media (min-width: 600px) {
     .card { max-width: 1100px; }
     #main { display: grid; grid-template-columns: 1fr 1.3fr; gap: 0 20px; align-items: start; }
-    #sec1 { grid-column: 1; grid-row: 1; }
+    #sec1 { grid-column: 1 / span 2; grid-row: 1; }
     #sec3 { grid-column: 1; grid-row: 2; }
-    #sec2 { grid-column: 2; grid-row: 1 / span 2; }
+    #sec2 { grid-column: 2; grid-row: 2; }
+    #text { height: calc(4.5em + 22px); }
+    .ctrl { display: flex; gap: 8px; align-items: stretch; margin-top: 4px; }
+    .ctrl .row { flex: 1; margin: 0; }
+    .ctrl #micBtn { flex: 1; margin-top: 4px !important; margin-bottom: 8px; font-size: 16px !important; padding: 8px !important; }
     #gestures { grid-template-columns: repeat(3, 1fr); gap: 8px; }
     #walk { gap: 8px; }
     #main .sub-btn.gest, #main .sub-btn.posture { font-size: 15px; padding: 10px 4px; }
@@ -67,11 +71,13 @@
     <textarea id="text" rows="2" placeholder="例：こんにちは、ロボホンです"></textarea>
     <button class="clear" onclick="clearText()" aria-label="文字を消す">×</button>
   </div>
+  <div class="ctrl">
   <div class="row">
     <select id="gesture"><option value="">身ぶりなし</option></select>
     <button class="sub-btn" onclick="speakText()">🗣 しゃべる</button>
   </div>
   <button id="micBtn" class="sub-btn" style="width:100%; margin-top:8px; background:#ff4b4b; font-size:20px; padding:16px">🎤 押して話しかける（ロボホンが同じ言葉をしゃべります）</button>
+  </div>
   </div>
 
   <div id="sec2">
