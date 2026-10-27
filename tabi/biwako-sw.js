@@ -1,5 +1,5 @@
 // 旅のガイド: ページと音声をスマホに保存して、電波がなくても使えるようにする
-const CACHE = "tabi-biwako-v4";
+const CACHE = "tabi-biwako-v6";
 const PAGE = ["biwako.html", "biwako-data.js", "biwako-manifest.json", "../robohon-icon-192.png", "../robohon-icon-512.png"];
 
 self.addEventListener("install", (e) => {
