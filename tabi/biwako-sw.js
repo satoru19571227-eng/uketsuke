@@ -1,9 +1,10 @@
 // 旅のガイド: ページと音声をスマホに保存して、電波がなくても使えるようにする
-const CACHE = "tabi-biwako-v6";
+const CACHE = "tabi-biwako-v7";
 const PAGE = ["biwako.html", "biwako-data.js", "biwako-manifest.json", "../robohon-icon-192.png", "../robohon-icon-512.png"];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PAGE)).then(() => self.skipWaiting()));
+  // ブラウザに残った古い台本を使わないよう、cache: "reload" で取り直す
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PAGE.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith("tabi-biwako-") && k !== CACHE).map((k) => caches.delete(k))))
@@ -26,6 +27,6 @@ self.addEventListener("fetch", (e) => {
         if (n.ok) { const copy = n.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
         return n;
       }))
-    : fetch(e.request).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return r; })
+    : fetch(e.request, { cache: "no-cache" }).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return r; })
         .catch(() => caches.match(e.request, { ignoreSearch: true })));
 });

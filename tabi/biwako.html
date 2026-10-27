@@ -139,8 +139,14 @@ if ("serviceWorker" in navigator) {
     ch.port1.onmessage = e => { off.textContent = e.data.ok ? `音声 ${e.data.n} 本を保存しました（電波がなくても鳴ります）` : "音声の保存に失敗しました。電波のある所で開き直してください"; };
     sw.postMessage({ files }, [ch.port2]);
   };
-  // 新しい版に切り替わったら、新しい版の置き場所に保存し直す
-  navigator.serviceWorker.addEventListener("controllerchange", () => saveAll(navigator.serviceWorker.controller));
+  // 新しい版に切り替わったら、新しい台本で開き直す（開き直したページが新しい版の置き場所に保存する）
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    reloading = true;
+    off.textContent = "新しい案内に入れかえています…";
+    location.reload();
+  });
   navigator.serviceWorker.register("biwako-sw.js").then(() => navigator.serviceWorker.ready)
     .then(reg => saveAll(reg.active))
     .catch(() => { off.textContent = "このページを電波のある所で一度開いてください"; });
