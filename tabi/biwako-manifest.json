@@ -1,0 +1,13 @@
+{
+  "name": "琵琶湖 旅のガイド",
+  "short_name": "旅ガイド",
+  "start_url": "biwako.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ecfeff",
+  "theme_color": "#0e7490",
+  "icons": [
+    { "src": "../robohon-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "../robohon-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
