@@ -163,17 +163,17 @@
     <button class="sub-btn toy" onclick="runCommand('サイコロを左に転がす', 'play_dice', { Category: 'rollDiceLeft' })">🎲 左に転がす</button>
     <button class="sub-btn toy" onclick="runCommand('サイコロを右に転がす', 'play_dice', { Category: 'rollDiceRight' })">🎲 右に転がす</button>
     <button class="sub-btn toy" onclick="runCommand('サイコロを向こうに転がす', 'play_dice', { Category: 'rollDicePush' })">🎲 向こうに転がす</button>
-    <button class="sub-btn toy" onclick="runCommand('サイコロを手前に転がす', 'play_dice', { Category: 'rollDicePull' })">🎲 手前に転がす</button>
+    <button class="sub-btn toy" onclick="runCommand('サイコロを手前に転がす', 'play_dice', { Category: 'rollDicePull' })">🎲 手前に転がす ×</button>
     <button class="sub-btn toy" style="grid-column: span 2" onclick="runCommand('サイコロを積む', 'play_dice', { Category: 'stackDice' })">🎲 サイコロを積む<small>くわえているときに</small></button>
   </div>
   <p class="note">ける・くわえる・転がすは、先に「近づく」でそばへ行ってから押してください。</p>
 
   <h3>🏠 決まった場所へ行く</h3>
   <div class="grid" style="margin-top:8px">
-    <button class="sub-btn place" onclick="runCommand('充電台へ行く', 'move_to_position', { TargetType: 'charging_station' })">🔌 充電台へ</button>
-    <button class="sub-btn place" onclick="runCommand('おむかえ場所へ行く', 'move_to_position', { TargetType: 'greeting_spot' })">🚪 おむかえ場所へ</button>
-    <button class="sub-btn place" onclick="runCommand('トイレの場所へ行く', 'move_to_position', { TargetType: 'toilet' })">🚽 トイレの場所へ</button>
-    <button class="sub-btn place" onclick="runCommand('歩き回って地図を思い出す（1分）', 'explore', { Duration: 60 })">🗺️ 地図を思い出す<small>1分歩き回る</small></button>
+    <button class="sub-btn place" onclick="runCommand('充電台へ行く', 'move_to_position', { TargetType: 'charging_station' })">🔌 充電台へ △</button>
+    <button class="sub-btn place" onclick="runCommand('おむかえ場所へ行く', 'move_to_position', { TargetType: 'greeting_spot' })">🚪 おむかえ場所へ △</button>
+    <button class="sub-btn place" onclick="runCommand('トイレの場所へ行く', 'move_to_position', { TargetType: 'toilet' })">🚽 トイレの場所へ △</button>
+    <button class="sub-btn place" onclick="runCommand('歩き回って地図を思い出す（1分）', 'explore', { Duration: 60 })">🗺️ 地図を思い出す △<small>1分歩き回る</small></button>
   </div>
   <p class="note">場所へ行けないときは、先に「地図を思い出す」を押してください。おむかえ場所・トイレは、アプリで教えてある場合だけ行けます。</p>
 
@@ -431,6 +431,8 @@ const MORE = [
   ["👀 頭・顔・耳", [["見回す","lookAroundHead"],["のぞきこむ","lookOver"],["あごを引く","drawInOnesChin"],["口を開ける","openMouth"],["10秒口を開ける","openMouth10s"],["耳を動かす","wiggleEar"],["においをかぐ","sniff"],["下をかぐ","sniffDown"],["上をかぐ","sniffUp"],["顔を洗う","washFace"],["キス","kiss"],["ヘディング","heading"]]],
   ["🐾 体の動き・芸", [["ピース","peace"],["ハイタッチ","highFive"],["おいでおいで","beckon"],["横にキック","sideKick"],["横向きに起きる","sideUp"],["背中を丸める","bentBack"],["伸び","stretch"],["体を揺らす","swing"],["おしりを振る","shakeHipsBehind"],["小刻みに揺れる","jiggle"],["じゃれてかむ","playBiting"],["背中をこすりつける","rubBack"],["体をなめる","lickBody"],["床をかく","scratchFloor"],["頭をかく","scratchHead"],["マーキング","marking"],["水を飲む","drinkWater"],["ごはんを食べる","eatDryFood"],["骨を投げる（アイボーンが要るかも）","throwBone"],["サイコロを投げる（サイコロが要るかも）","throwDice"]]],
 ];
+// 実機で試して動かなかったもの（×をつける）
+const NG_MOTIONS = ["peace","beckon","sideKick","sideUp","bentBack","lickBody","scratchHead","marking","throwBone","throwDice"];
 const moreBox = document.getElementById("more");
 const th = document.createElement("h3"); th.textContent = "🎶 ふるまい（歌とダンス）"; moreBox.appendChild(th);
 const tg = document.createElement("div"); tg.className = "grid";
@@ -448,7 +450,7 @@ MORE.forEach(([title, items], n) => {
   const g = document.createElement("div"); g.className = "grid"; g.style.marginTop = "8px";
   items.forEach(([label, code]) => {
     const b = document.createElement("button"); b.className = "sub-btn more";
-    b.textContent = label;
+    b.textContent = label + (NG_MOTIONS.includes(code) ? " ×" : "");
     b.onclick = () => runCommand(label, "motion", code);
     g.appendChild(b);
   });
