@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ロボホンとアイボの寸劇</title>
+<link rel="icon" href="robohon-icon-192.png">
+<meta name="theme-color" content="#7c3aed">
+<style>
+  body { font-family: "Meiryo", sans-serif; background: #f5f3ff; padding: 12px; margin: 0; }
+  .card { background: white; max-width: 760px; margin: 0 auto 14px; padding: 16px; border-radius: 18px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); border: 3px solid #7c3aed; }
+  h1 { color: #4c1d95; font-size: 24px; margin: 0 0 8px; text-align: center; }
+  h2 { font-size: 20px; margin: 0 0 8px; color: #4c1d95; }
+  h3 { font-size: 17px; margin: 0 0 6px; }
+  .robo { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 14px; padding: 10px; margin: 8px 0; }
+  .robo h3 { color: #1d4ed8; }
+  .aibo { background: #fffbeb; border: 2px solid #f59e0b; border-radius: 14px; padding: 10px; margin: 8px 0; }
+  .aibo h3 { color: #b45309; }
+  textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 17px; line-height: 1.5; padding: 9px; margin: 3px 0 6px; border: 1px solid #999; border-radius: 8px; resize: none; }
+  input, select { width: 100%; box-sizing: border-box; font-size: 17px; padding: 9px; margin: 3px 0 6px; border: 1px solid #999; border-radius: 8px; background: white; }
+  label { display: block; font-weight: bold; color: #333; font-size: 14px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  @media (max-width: 560px) { .row2, .row3 { grid-template-columns: 1fr; } }
+  .line { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+  .voice { display: flex; gap: 6px; align-items: center; margin: -2px 0 8px; font-size: 13px; color: #555; flex-wrap: wrap; }
+  .voice button { font-size: 14px; padding: 6px 10px; }
+  button { font-family: inherit; font-size: 17px; padding: 10px 14px; border-radius: 10px; border: none; background: #7c3aed; color: white; font-weight: bold; cursor: pointer; }
+  button.small { font-size: 14px; padding: 7px 10px; }
+  button.gray { background: #64748b; }
+  button.red { background: #dc2626; }
+  button.green { background: #16a34a; }
+  button.amber { background: #d97706; }
+  button.mic { background: #ff4b4b; }
+  button.mic.on { background: #28a745; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .bar > * { flex: 1 1 auto; }
+  #places { display: flex; gap: 6px; }
+  #places button { flex: 1; background: #94a3b8; }
+  #places button.on { background: #0d9488; }
+  #status { position: sticky; top: 6px; z-index: 5; font-size: 17px; font-weight: bold; color: #333; background: #f8fafc; border: 1px solid #ccc; border-radius: 12px; padding: 10px; min-height: 26px; }
+  #telop { font-size: 26px; font-weight: bold; text-align: center; min-height: 40px; line-height: 1.5; }
+  #telop small { display: block; font-size: 16px; color: #666; }
+  .note { font-size: 14px; color: #555; line-height: 1.6; }
+  .ok { color: #1b8a3a; } .ng { color: #c62828; }
+  details summary { font-size: 18px; font-weight: bold; color: #4c1d95; cursor: pointer; }
+  .scene-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .has { color: #1b8a3a; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🤖 ロボホンと 🐕 アイボの寸劇</h1>
+  <div id="places"></div>
+  <p class="note" style="margin:6px 0">いまいる場所のボタンを押してから再生します（アイボはどの場所でもインターネットにつながっていれば動きます）。</p>
+  <label style="font-weight:normal;font-size:16px"><input type="checkbox" id="stay" style="width:auto;margin-right:6px" onchange="store('skit_stay', this.checked ? '1' : '0')">✋ 再生のはじめにアイボを「指示待ち」にする（テーブルの上で歩き回らない）</label>
+  <div class="bar" style="margin:4px 0 8px"><button class="small gray" onclick="setMode('DEVELOPMENT')">✋ 指示待ちにする</button><button class="small gray" onclick="setMode('NORMAL')">🐕 ふだんに戻す（解除）</button></div>
+  <label style="font-weight:normal;font-size:16px"><input type="checkbox" id="practice" style="width:auto;margin-right:6px">🎭 練習（ロボットは動かさず、声と字幕だけ）</label>
+  <div id="status">台本を書いて ▶ を押してください</div>
+  <div id="telop"></div>
+  <div class="bar" style="margin-top:8px">
+    <button class="green" onclick="playAll()">▶▶ 全部を順番に再生</button>
+    <button class="red" onclick="stopAll()">⏹ 止める</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>📒 台本</h2>
+  <div class="bar">
+    <select id="scriptList" onchange="openScript(this.value)" style="flex:2 1 200px"></select>
+    <button class="small" onclick="newScript()">＋ 新しい台本</button>
+    <button class="small gray" onclick="renameScript()">名前を変える</button>
+    <button class="small red" onclick="deleteScript()">消す</button>
+  </div>
+  <p class="note" id="saveMsg">書いたものは、このタブレットに自動で保存されます。</p>
+</div>
+
+<div id="scenes"></div>
+
+<div class="card">
+  <details>
+    <summary>⚙️ 設定（はじめに1回）</summary>
+    <h3 style="margin-top:12px">🤖 ロボホンの住所</h3>
+    <p class="note">つなぐWi-Fiが変わると、ロボホンの住所も変わります。ロボホンの「設定」→「端末情報」の<b>Wi-Fi IPアドレス</b>を、場所ごとに入れてください。使わない場所は空のままでかまいません。ロボホンのリモコンのページで入れた住所は、ここにもそのまま出ます。</p>
+    <label for="ip_home">🏠 家</label>
+    <input id="ip_home" inputmode="decimal" placeholder="192.168.0.195">
+    <label for="ip_tether">📱 テザリング</label>
+    <input id="ip_tether" inputmode="decimal" placeholder="例：192.168.43.25">
+    <label for="ip_pocket">👜 ポケットWi-Fi</label>
+    <input id="ip_pocket" inputmode="decimal" placeholder="例：192.168.128.101">
+    <div class="bar"><button class="small" onclick="saveIp()">保存する</button><button class="small gray" onclick="checkRobot()">つながるか確かめる</button></div>
+    <h3 style="margin-top:16px">🐕 アイボ</h3>
+    <label for="token">アクセストークン</label>
+    <input id="token" type="password" autocomplete="off" placeholder="eyJ… で始まる長い文字">
+    <button class="small gray" onclick="findAibo()">アイボを探す</button>
+    <label for="device" style="margin-top:8px">アイボ</label>
+    <select id="device"></select>
+    <button class="small" onclick="saveAibo()">保存する</button>
+    <p id="setMsg" class="note"></p>
+    <h3 style="margin-top:16px">🎤 アイボの声について</h3>
+    <p class="note">アイボのセリフの下の「🔊 声のファイルを選ぶ」で、声のアプリ（ずんだもんボイス・ムービー・メーカーなど）で保存したファイルを選びます。音声でも動画でもかまいません（動画は声だけ鳴らします）。四国めたん・ずんだもん、どの声でも使えます。声のファイルがない行は、タブレットの声で読みます。</p>
+  </details>
+</div>
+
+<script>
+const statusBox = document.getElementById("status"), telop = document.getElementById("telop");
+function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+function store(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+const sleep = ms => new Promise(ok => setTimeout(ok, ms));
+const SCENES = 5;
+
+// ---------- 選べる動き ----------
+// ロボホン：頭（しゃべる前に動く）
+const R_HEAD = [["", "頭はそのまま"], ["m:右を向く", "右を向く"], ["m:左を向く", "左を向く"], ["m:上を向く", "上を向く"], ["m:下を向く", "下を向く"], ["m:正面を向く", "正面を向く"]];
+// ロボホン：動作。g: しゃべりながら / m: しゃべったあと / d: ダンス（番号）
+const R_ACT = [
+  ["", [["", "動作なし"]]],
+  ["🗣️ しゃべりながら", [["g:拍手", "拍手"], ["g:右側を案内する", "紹介（右側を案内）"], ["g:左側を案内する", "紹介（左側を案内）"], ["g:よろしくね", "よろしくね"], ["g:おはよう", "おはよう"], ["g:ただいま", "ただいま"], ["g:おかえり", "おかえり"], ["g:おやすみ", "おやすみ"], ["g:乾杯！", "乾杯！"], ["g:大きく右手を上げる", "大きく右手を上げる"], ["g:大きく左手を上げる", "大きく左手を上げる"], ["g:小さく右手を上げる", "小さく右手を上げる"], ["g:小さく左手を上げる", "小さく左手を上げる"]]],
+  ["🤚 しゃべったあと", ["バンザイ", "バイバイ", "お辞儀", "敬礼", "えへへ", "拍手", "飛行機", "出発進行", "ゴリラ", "スキー", "テニス", "バイオリン", "歯磨き", "お茶を飲む", "食べる", "満腹", "サッカー", "バスケ", "スクワット", "ボールをける", "準備運動", "早歩き", "逆立ち"].map(n => ["m:" + n, n])],
+  ["💃 ダンス（しゃべったあと）", [[24, "ロボホン体操"], [28, "ロボホン音頭"], [61, "ロボホンマーチ"], [73, "ロボホンソング"], [97, "ロボホンルンバ"], [122, "ロボホンサンバ"], [3, "阿波踊り"], [50, "ソーラン節"], [100, "炭坑節"], [39, "ラジオ体操"], [38, "森のくまさん"], [33, "うさぎのダンス"], [15, "フラダンス"], [34, "コサックダンス"], [98, "ジェンカ"], [86, "オクラホマミキサー"], [36, "チアリーディング1"], [16, "野球応援"], [4, "エアギター1"], [48, "忍者のダンス"], [95, "おすもうのダンス"], [119, "バースデーソング"]].map(([n, t]) => ["d:" + n, t])],
+];
+// アイボ：姿勢（声の前にする）。伏せ = 顔を洗う（伏せて前を見る）。リモコンに伏せがないので代わりに使う。
+// 伏せると頭がロボホンの目の高さに近く、伏せたまま口パクすると話している感じが出る（2026-10-31 実物で確かめた）
+const POSE_DOWN = "p:washFace";
+const A_POSE = [["", "姿勢はそのまま"], [POSE_DOWN, "伏せ（顔を洗う・話すのにいちばん合う）"], ["s:sit", "おすわり（首は自動で下を向く）"], ["s:stand", "立つ"]];
+// アイボ：口（口パクの代わり。セリフか声があれば自動で、声と同時に送る）
+// じゃれてかむ = 口を開け閉めするので口パクにいちばん近い（ユーザーが実物で見た）。寝言も口パクになるが目が眠そう。
+// どの口の動きも、している間は首が上がる（2026-10-31 実物で確認）
+const MOUTH_OPEN = "p:openMouth";
+const A_MOUTH = [["", "口パク（じゃれてかむ）"], [MOUTH_OPEN, "口を開ける"], ["p:openMouth10s", "10秒口を開ける（長いセリフ）"], ["p:sleepTalking", "寝言（口パク・眠そうな目）"], ["none", "口は動かさない（話す間もロボホンを見つめる）"]];
+const mouthOf = v => v === "none" ? "" : v || "p:playBiting";
+// アイボ：首。下を向く = ロボホンと目線が合う（ユーザーがよく使う）
+const NECK_DOWN = "h:0:-30";
+const A_NECK = [["", "首はそのまま"], [NECK_DOWN, "下を向く（ロボホンを見る）"], ["h:0:30", "上を向く"], ["h:60:0", "左を向く"], ["h:-60:0", "右を向く"], ["h:0:0", "正面を向く"]];
+// アイボ：play_motion（全部リモコンで動いたもの）。顔を洗う = 伏せて前を見る形で終わる
+const A_FACE = [["", "頭・顔・耳はそのまま"], ...[["顔を洗う（伏せて前を見る）", "washFace"], ["口を開ける", "openMouth"], ["見回す", "lookAroundHead"], ["のぞきこむ", "lookOver"], ["あごを引く", "drawInOnesChin"], ["耳を動かす", "wiggleEar"], ["においをかぐ", "sniff"], ["下をかぐ", "sniffDown"], ["上をかぐ", "sniffUp"], ["キス", "kiss"], ["ヘディング", "heading"]].map(([t, c]) => ["p:" + c, t])];
+const A_CRY = [["", "鳴かない"], ...[["ワン（太い声）", "woof"], ["ワンと鳴く", "bark"], ["キャンキャン", "yap"], ["クーン", "whine"], ["くしゃみ", "sneeze"], ["あくび", "yawn"], ["ハッとする", "gasp"], ["寝言", "sleepTalking"], ["歌う", "sing"]].map(([t, c]) => ["p:" + c, t])];
+const A_FEEL = [["", "気持ち・反応なし"], ...[["うなずく", "nodHead"], ["首を横に振る", "shakeHead"], ["首をかしげる", "curious"], ["賛成", "agree"], ["大よろこび", "overJoyed"], ["しょんぼり", "bad"], ["気づく", "perceive"], ["少しびっくり", "startledLittle"], ["びっくり", "startled"], ["うれしい", "happyOrHot"], ["こんにちは大好き", "helloIloveYou"], ["なかよくしよう", "imFriendly"], ["ていねいにあいさつ", "friendlyPolite"], ["おねだり", "prettyPlease"], ["そわそわ", "restless"], ["ぶるっと震える", "shudder"], ["待っている", "waiting"], ["準備オーケー", "ready"], ["くつろぐ", "relax"], ["バンザイ", "handsUp"], ["ダンス", "dance"], ["ハイタッチ", "highFive"], ["おしりを振る", "shakeHipsBehind"], ["伸び", "stretch"]].map(([t, c]) => ["p:" + c, t])];
+const A_TOY = [["", "おもちゃなし"], ["t:find_object:pinkball", "ピンクボールを探す"], ["t:approach_object:pinkball", "ピンクボールに近づく（歩く・テーブル注意）"], ["t:chase_object:pinkball", "ピンクボールを見続ける（10秒）"], ["t:find_object:aibone", "アイボーンを探す"], ["t:approach_object:aibone", "アイボーンに近づく（歩く・テーブル注意）"], ["t:chase_object:aibone", "アイボーンを見続ける（10秒）"], ["t:find_object:dice", "サイコロを探す"], ["t:approach_object:dice", "サイコロに近づく（歩く・テーブル注意）"]];
+
+// ---------- 画面を作る ----------
+function options(list) {
+  // list は [値, 名前] の並び、または [グループ名, [[値, 名前]...]] の並び
+  return list.map(x => Array.isArray(x[1])
+    ? (x[0] ? `<optgroup label="${x[0]}">` : "") + x[1].map(([v, t]) => `<option value="${v}">${t}</option>`).join("") + (x[0] ? "</optgroup>" : "")
+    : `<option value="${x[0]}">${x[1]}</option>`).join("");
+}
+const box = document.getElementById("scenes");
+for (let s = 0; s < SCENES; s++) {
+  const c = document.createElement("div"); c.className = "card";
+  c.innerHTML = `
+    <div class="scene-head"><h2>【場面 ${s + 1}】</h2><button class="small" onclick="playOne(${s})">▶ この場面を再生</button></div>
+    <div class="robo"><h3>🤖 ロボホン</h3>
+      <textarea data-k="rtext" data-s="${s}" rows="3" placeholder="セリフ（3行まで）"></textarea>
+      <div class="voice"><button class="mic" onclick="listen(this, 'rtext', ${s})">🎤 声で入れる</button><span>話した言葉が1行ずつ入ります</span></div>
+      <div class="row2">
+        <label>頭<select data-k="rhead" data-s="${s}">${options(R_HEAD)}</select></label>
+        <label>動作<select data-k="ract" data-s="${s}">${options(R_ACT)}</select></label>
+      </div>
+    </div>
+    <div class="aibo"><h3>🐕 アイボ</h3>
+      <textarea data-k="atext" data-s="${s}" rows="3" placeholder="セリフ（3行まで・字幕になります）"></textarea>
+      <div class="voice"><button class="mic" onclick="listen(this, 'atext', ${s})">🎤 声で入れる</button><span>話した言葉が1行ずつ入ります</span></div>
+      <div class="voice"><button class="amber" onclick="pickVoice(${s})">🔊 声のファイルを選ぶ</button><button class="gray" onclick="testVoice(${s})">▶ 聞く</button><button class="gray" onclick="clearVoice(${s})">外す</button><span id="v${s}">声のファイルなし</span></div>
+      <div class="row2">
+        <label>姿勢<select data-k="apose" data-s="${s}">${options(A_POSE)}</select></label>
+        <label>口<select data-k="amouth" data-s="${s}">${options(A_MOUTH)}</select></label>
+        <label>頭・顔・耳<select data-k="aface" data-s="${s}">${options(A_FACE)}</select></label>
+        <label>首（上下左右）<select data-k="aneck" data-s="${s}">${options(A_NECK)}</select></label>
+        <label>鳴き声・声<select data-k="acry" data-s="${s}">${options(A_CRY)}</select></label>
+        <label>気持ち・反応<select data-k="afeel" data-s="${s}">${options(A_FEEL)}</select></label>
+      </div>
+      <label>おもちゃで遊ぶ<select data-k="atoy" data-s="${s}">${options(A_TOY)}</select></label>
+    </div>`;
+  box.appendChild(c);
+}
+const filePick = document.createElement("input");
+filePick.type = "file"; filePick.accept = "audio/*,video/*,.wav,.mp3,.m4a,.mp4,.ogg";
+
+// ---------- 台本の保存（タブレットの中の IndexedDB。声のファイルもそのまま入る） ----------
+let DB = null;
+function openDb() {
+  return new Promise((ok, ng) => {
+    const r = indexedDB.open("skit", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("scripts", { keyPath: "name" });
+    r.onsuccess = () => ok(r.result); r.onerror = () => ng(r.error);
+  });
+}
+function tx(mode, fn) {
+  return new Promise((ok, ng) => {
+    const t = DB.transaction("scripts", mode), st = t.objectStore("scripts"), r = fn(st);
+    t.oncomplete = () => ok(r && r.result); t.onerror = () => ng(t.error);
+  });
+}
+function emptyScript(name) {
+  // 新しい台本は、場面1でアイボが伏せてから始まる
+  return { name, scenes: Array.from({ length: SCENES }, (_, i) => ({ rtext: "", rhead: "", ract: "", atext: "", apose: i === 0 ? POSE_DOWN : "", amouth: "", aneck: "", aface: "", acry: "", afeel: "", atoy: "", voice: null, vname: "" })) };
+}
+let CUR = emptyScript("寸劇1");
+function show() {
+  // はじめの形（1行ずつの欄・行ごとの声）で保存した台本を、3行の枠の形に直す
+  CUR.scenes.forEach(sc => {
+    if (sc.rtext == null) { sc.rtext = [sc.r0, sc.r1, sc.r2].filter(Boolean).join("\n"); sc.atext = [sc.a0, sc.a1, sc.a2].filter(Boolean).join("\n"); }
+    if (Array.isArray(sc.voice)) { const i = sc.voice.findIndex(Boolean); sc.voice = i < 0 ? null : sc.voice[i]; sc.vname = i < 0 ? "" : sc.vname[i]; }
+  });
+  document.querySelectorAll("[data-k]").forEach(el => { el.value = CUR.scenes[el.dataset.s][el.dataset.k] || ""; });
+  for (let s = 0; s < SCENES; s++) showVoice(s);
+}
+function showVoice(s) {
+  const sc = CUR.scenes[s], el = document.getElementById(`v${s}`);
+  el.innerHTML = sc.voice ? `<span class="has">✅ ${sc.vname || "声のファイル"}</span>` : "声のファイルなし";
+}
+let saveTimer = 0;
+function saveSoon() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try { await tx("readwrite", st => st.put(CUR)); store("skit_last", CUR.name); document.getElementById("saveMsg").innerHTML = `<span class="ok">『${CUR.name}』を保存しました</span>`; }
+    catch (e) { document.getElementById("saveMsg").innerHTML = '<span class="ng">保存できませんでした（容量がいっぱいかもしれません）</span>'; }
+  }, 500);
+}
+document.querySelectorAll("[data-k]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
+  if (el.tagName === "TEXTAREA" && el.value.split("\n").length > 3) el.value = el.value.split("\n").slice(0, 3).join("\n");  // 枠は3行まで
+  const sc = CUR.scenes[el.dataset.s];
+  sc[el.dataset.k] = el.value;
+  // おすわりを選んだら、首を「下を向く」にしておく（あとから選び直せる）
+  if (el.dataset.k === "apose" && el.value === "s:sit" && !sc.aneck) { sc.aneck = NECK_DOWN; document.querySelector(`[data-k=aneck][data-s="${el.dataset.s}"]`).value = NECK_DOWN; }
+  saveSoon();
+}));
+
+async function refreshList() {
+  const names = await tx("readonly", st => st.getAllKeys());
+  const sel = document.getElementById("scriptList");
+  sel.innerHTML = names.map(n => `<option>${n.replace(/</g, "&lt;")}</option>`).join("");
+  sel.value = CUR.name;
+}
+async function openScript(name) {
+  const s = await tx("readonly", st => st.get(name));
+  if (s) { CUR = s; store("skit_last", name); show(); document.getElementById("saveMsg").textContent = `『${name}』を開きました`; }
+}
+async function newScript() {
+  const names = await tx("readonly", st => st.getAllKeys());
+  let n = 1; while (names.includes("寸劇" + n)) n++;
+  const name = prompt("新しい台本の名前", "寸劇" + n); if (!name) return;
+  if (names.includes(name)) { alert("同じ名前の台本があります"); return; }
+  CUR = emptyScript(name); show(); await tx("readwrite", st => st.put(CUR)); store("skit_last", name); await refreshList();
+}
+async function renameScript() {
+  const name = prompt("台本の新しい名前", CUR.name); if (!name || name === CUR.name) return;
+  const names = await tx("readonly", st => st.getAllKeys());
+  if (names.includes(name)) { alert("同じ名前の台本があります"); return; }
+  const old = CUR.name; CUR.name = name;
+  await tx("readwrite", st => { st.delete(old); return st.put(CUR); }); store("skit_last", name); await refreshList();
+}
+async function deleteScript() {
+  if (!confirm(`『${CUR.name}』を消します。声のファイルも一緒に消えます。よろしいですか？`)) return;
+  await tx("readwrite", st => st.delete(CUR.name));
+  const names = await tx("readonly", st => st.getAllKeys());
+  if (names.length) await openScript(names[0]); else { CUR = emptyScript("寸劇1"); show(); await tx("readwrite", st => st.put(CUR)); }
+  await refreshList();
+}
+
+// ---------- セリフを声で入れる（Chromeの音声認識。話した言葉を枠の次の行に足す） ----------
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+function listen(btn, key, s) {
+  if (!SpeechRecognition) { statusBox.innerHTML = "⚠️ このブラウザは声で入れることができません（Chromeで開いてください）"; return; }
+  if (rec) { rec.stop(); return; }
+  const ta = document.querySelector(`[data-k=${key}][data-s="${s}"]`);
+  if (ta.value.split("\n").filter(x => x.trim()).length >= 3) { statusBox.innerHTML = "✏️ この枠はもう3行あります。消してから入れてください"; return; }
+  rec = new SpeechRecognition(); rec.lang = "ja-JP"; rec.interimResults = false;
+  btn.classList.add("on"); btn.textContent = "🔴 聞いています…";
+  rec.onresult = e => {
+    const lines = ta.value.split("\n").filter(x => x.trim());
+    lines.push(e.results[0][0].transcript);
+    ta.value = lines.join("\n"); ta.dispatchEvent(new Event("input"));
+  };
+  rec.onerror = () => { statusBox.innerHTML = "⚠️ 聞き取れませんでした。もう一度押して話してください"; };
+  rec.onend = () => { rec = null; btn.classList.remove("on"); btn.textContent = "🎤 声で入れる"; };
+  rec.start();
+}
+
+// ---------- アイボの声 ----------
+function pickVoice(s) {
+  filePick.value = "";
+  filePick.onchange = () => {
+    const f = filePick.files[0]; if (!f) return;
+    CUR.scenes[s].voice = f; CUR.scenes[s].vname = f.name; showVoice(s); saveSoon();
+  };
+  filePick.click();
+}
+function clearVoice(s) { CUR.scenes[s].voice = null; CUR.scenes[s].vname = ""; showVoice(s); saveSoon(); }
+let nowAudio = null;
+function playBlob(blob) {
+  return new Promise(ok => {
+    const url = URL.createObjectURL(blob), a = new Audio(url); nowAudio = a;
+    const end = () => { URL.revokeObjectURL(url); nowAudio = null; ok(); };
+    a.onended = end; a.onerror = end; a.onpause = end;
+    a.play().catch(end);
+  });
+}
+// 声のファイルがないときや練習のときは、タブレットの声で読む
+function tabletSay(text, pitch) {
+  return new Promise(ok => {
+    if (!window.speechSynthesis) return ok();
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.lang = "ja-JP"; u.pitch = pitch; u.rate = 1.05;
+    u.onend = ok; u.onerror = ok; speechSynthesis.speak(u);
+  });
+}
+function testVoice(s) {
+  const sc = CUR.scenes[s];
+  if (sc.voice) playBlob(sc.voice); else if (sc.atext.trim()) tabletSay(sc.atext, 1.6);
+}
+const linesOf = t => (t || "").split("\n").map(x => x.trim()).filter(Boolean);
+
+// ---------- ロボホン（ロブリックへ直接送る。robohon.html と同じ仕組み） ----------
+const PLACES = [["home", "🏠 家", "robohon_ip"], ["tether", "📱 テザリング", "robohon_ip_tether"], ["pocket", "👜 ポケットWi-Fi", "robohon_ip_pocket"]];
+PLACES.forEach(([p, , key]) => { document.getElementById("ip_" + p).value = load(key) || (p === "home" ? "192.168.0.195" : ""); });
+let PLACE = load("robohon_place") || "home", IP = "";
+function usePlace(p) {
+  const [, label, key] = PLACES.find(x => x[0] === p) || PLACES[0];
+  PLACE = p; store("robohon_place", p);
+  IP = load(key) || (p === "home" ? "192.168.0.195" : "");
+  document.querySelectorAll("#places button").forEach(b => b.classList.toggle("on", b.dataset.place === p));
+  return { label, ok: !!IP };
+}
+PLACES.forEach(([p, label]) => {
+  const b = document.createElement("button"); b.dataset.place = p; b.textContent = label;
+  b.onclick = () => { const r = usePlace(p); statusBox.innerHTML = r.ok ? `${r.label}のロボホン（${IP}）に送ります` : `⚙️ ${r.label}のロボホンの住所がまだ入っていません。下の「設定」で入れてください`; };
+  document.getElementById("places").appendChild(b);
+});
+usePlace(PLACE);
+function saveIp() {
+  const msg = document.getElementById("setMsg");
+  for (const [p, label] of PLACES) {
+    const v = document.getElementById("ip_" + p).value.trim();
+    if (v && !/^\d+\.\d+\.\d+\.\d+$/.test(v)) { msg.innerHTML = `<span class="ng">${label}の住所は 192.168.0.195 のような数字で入れてください</span>`; return false; }
+    if (p === "home" && !v) { msg.innerHTML = '<span class="ng">🏠 家の住所は空にできません</span>'; return false; }
+  }
+  let saved = true;
+  PLACES.forEach(([p, , key]) => { saved = store(key, document.getElementById("ip_" + p).value.trim()) && saved; });
+  usePlace(PLACE);
+  msg.innerHTML = saved ? '<span class="ok">保存しました</span>' : '<span class="ng">保存できませんでした</span>';
+  return true;
+}
+const ERRORS = { MannerOn: "ロボホンがマナーモードです。解除してください", InUse: "ほかの端末がロブリックを使っています", StandAlone: "ロボホンのロブリックが待ち受け状態ではありません", NoLicence: "ロブリックのライセンスがありません", InvalidValue: "命令の内容が正しくありません" };
+const NO_ROBOT = "ロボホンにつながりません。上の場所のボタンが合っているか、同じWi-Fiか、ロブリックが起動しているか確かめてください";
+let cmdId = Date.now() % 100000;
+async function robot(path, ms = 10000) {
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
+  // targetAddressSpace: https のページから家の中の http のロボホンへ送るために必要
+  try { const res = await fetch(`http://${IP}:18001/${path}`, { cache: "no-store", signal: ctl.signal, targetAddressSpace: "local" }); return await res.text(); }
+  finally { clearTimeout(timer); }
+}
+async function checkRobot() {
+  if (!saveIp()) return;
+  const msg = document.getElementById("setMsg"), label = PLACES.find(x => x[0] === PLACE)[1];
+  msg.textContent = `${label}（${IP}）を確かめています…`;
+  try { await robot("poll", 5000); msg.innerHTML = `<span class="ok">✅ ${label}でロボホンにつながりました</span>`; }
+  catch (e) { msg.innerHTML = `<span class="ng">${NO_ROBOT}</span>`; }
+}
+// 命令を送って、終わるまで待つ。失敗したら例外にする
+async function robo(label, cmd, ...args) {
+  statusBox.innerHTML = `🤖 ロボホン：${label}`;
+  let reply;
+  try { reply = (await robot([cmd, ++cmdId, ...args.map(a => encodeURIComponent(a))].join("/"))).trim().split(/\s+/)[0]; }
+  catch (e) { throw new Error(NO_ROBOT); }
+  if (ERRORS[reply]) throw new Error(ERRORS[reply]);
+  for (let i = 0; i < 300; i++) {
+    await sleep(1500); checkStop();
+    let p; try { p = await robot("poll", 5000); } catch (e) { throw new Error(NO_ROBOT); }
+    if (!/^_busy/m.test(p)) return;
+  }
+}
+
+// ---------- アイボ（Sony の aibo Web API。aibo-all.html と同じ仕組み） ----------
+const BASE = "https://public.api.aibo.com/v1";
+let TOKEN = load("aibo_token"), DEVICE_ID = load("aibo_device");
+document.getElementById("token").value = TOKEN;
+if (DEVICE_ID) { const o = document.createElement("option"); o.value = DEVICE_ID; o.textContent = load("aibo_device_name") || DEVICE_ID; document.getElementById("device").appendChild(o); }
+async function findAibo() {
+  const t = document.getElementById("token").value.trim(), msg = document.getElementById("setMsg");
+  if (!t) { msg.innerHTML = '<span class="ng">アクセストークンを入れてください</span>'; return; }
+  msg.textContent = "探しています…";
+  try {
+    const res = await fetch(BASE + "/devices", { headers: { "Authorization": "Bearer " + t } });
+    if (!res.ok) { msg.innerHTML = '<span class="ng">見つけられませんでした（' + res.status + '）。アクセストークンを確かめてください</span>'; return; }
+    const list = (await res.json()).devices || [], sel = document.getElementById("device"); sel.innerHTML = "";
+    list.forEach(d => { const o = document.createElement("option"); o.value = d.deviceId; o.textContent = d.nickname || d.deviceId; sel.appendChild(o); });
+    msg.innerHTML = list.length ? '<span class="ok">アイボが ' + list.length + ' 台見つかりました。選んで「保存する」を押してください</span>' : '<span class="ng">アイボが見つかりませんでした</span>';
+  } catch (e) { msg.innerHTML = '<span class="ng">通信に失敗しました</span>'; }
+}
+function saveAibo() {
+  const t = document.getElementById("token").value.trim(), sel = document.getElementById("device"), msg = document.getElementById("setMsg");
+  if (!t || !sel.value) { msg.innerHTML = '<span class="ng">アクセストークンを入れて、アイボを選んでください</span>'; return; }
+  TOKEN = t; DEVICE_ID = sel.value;
+  const ok = store("aibo_token", TOKEN) && store("aibo_device", DEVICE_ID) && store("aibo_device_name", sel.options[sel.selectedIndex].textContent);
+  msg.innerHTML = ok ? '<span class="ok">保存しました</span>' : '<span class="ng">保存できませんでした</span>';
+}
+// 1つ送る。queue = true なら予約（Enqueue）で送って待たずに executionId を返す（予約が断られたら "noqueue"）。
+// queue = false なら、できたか（またはできなかったか）がわかるまで待つ
+async function aibo(label, capability, args, queue = false) {
+  if (!TOKEN || !DEVICE_ID) throw new Error("アイボのアクセストークンが入っていません。下の「設定」で入れてください");
+  statusBox.innerHTML = `🐕 アイボ：${label}`;
+  let res;
+  try { res = await fetch(`${BASE}/devices/${DEVICE_ID}/capabilities/${capability}/execute`, { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify({ arguments: queue ? { ...args, Enqueue: true } : args }) }); }
+  catch (e) { throw new Error("アイボへの通信に失敗しました（インターネットにつながっているか確かめてください）"); }
+  if (res.status === 401 || res.status === 403) throw new Error("アイボのアクセストークンが使えません（期限切れかもしれません）");
+  if (queue && res.status === 400) return "noqueue";
+  if (!res.ok) { statusBox.innerHTML = `⚠️ アイボは『${label}』をできませんでした（${res.status}）`; return; }
+  const id = (await res.json()).executionId;
+  if (queue) return id;
+  await waitAibo(id, 10);
+}
+// 2秒ごとに最大 times 回たずねて、終わるのを待つ
+async function waitAibo(id, times) {
+  for (let i = 0; id && i < times; i++) {
+    await sleep(2000); checkStop();
+    try { const r2 = await fetch(`${BASE}/executions/${id}`, { headers: { "Authorization": `Bearer ${TOKEN}` } }); if (r2.ok) { const st = (await r2.json()).status; if (st === "SUCCEEDED" || st === "FAILED") return; } } catch (e) { return; }
+  }
+}
+function aiboStep(v, label, queue = false) {
+  const [kind, a, b] = v.split(":");
+  if (kind === "h") return aibo(label, "move_head", { Azimuth: Number(a), Elevation: Number(b), Velocity: 40 }, queue);
+  if (kind === "s") return aibo(label, "change_posture", { FinalPosture: a }, queue);
+  if (kind === "p") return aibo(label, "play_motion", { Category: a, Mode: "NONE" }, queue);
+  if (kind === "t") return aibo(label, a, a === "chase_object" ? { TargetType: b, ChasingDurationMsec: 10000 } : { TargetType: b }, queue);
+}
+// いくつかの動きを、間を空けずにアイボへ予約して送り、最後の1つが終わるまで待つ。
+// 予約が断られた動きからは、今までどおり1つずつ待って送る
+let aiboQueueOk = true;
+async function aiboSteps(steps) {
+  let lastId = null;
+  for (const [v, list] of steps) {
+    checkStop();
+    const name = nameOf(list, v);
+    if (aiboQueueOk) {
+      const r = await aiboStep(v, name, true);
+      if (r !== "noqueue") { if (r) lastId = r; continue; }
+      aiboQueueOk = false;
+    }
+    await aiboStep(v, name);
+  }
+  if (lastId) await waitAibo(lastId, 15);
+}
+
+// 指示待ち（DEVELOPMENT）= 自分から歩き回らない。テーブルの上の寸劇用。ふだん（NORMAL）で解除
+document.getElementById("stay").checked = load("skit_stay") !== "0";
+let stayDone = false;
+async function setMode(mode) {
+  const label = mode === "NORMAL" ? "ふだんに戻す" : "指示待ちにする";
+  try { await aibo(label, "set_mode", { ModeName: mode }); stayDone = mode !== "NORMAL"; statusBox.innerHTML = `🐕 アイボを『${label}』にしました`; }
+  catch (e) { statusBox.innerHTML = "⚠️ " + e.message; }
+}
+
+// ---------- 再生 ----------
+let playing = 0;
+class Stopped extends Error {}
+let myPlay = 0;
+function checkStop() { if (myPlay !== playing) throw new Stopped(); }
+const nameOf = (list, v) => { for (const x of list) { if (Array.isArray(x[1])) { const f = x[1].find(y => y[0] === v); if (f) return f[1]; } else if (x[0] === v) return x[1]; } return v; };
+
+async function robohonPart(s, sc, practice) {
+  const lines = linesOf(sc.rtext), text = lines.join("　");
+  if (!text && !sc.rhead && !sc.ract) return;
+  telop.innerHTML = `<small>【場面 ${s + 1}】🤖 ロボホン</small>` + lines.join("<br>");
+  if (practice) { if (text) await tabletSay(text, 1.3); checkStop(); return; }
+  if (sc.rhead) await robo(nameOf(R_HEAD, sc.rhead), "move", sc.rhead.slice(2));
+  checkStop();
+  const act = sc.ract, actName = nameOf(R_ACT, act);
+  if (act.startsWith("g:")) await robo(`「${text || "はい"}」（${actName}）`, "speakmove", text || "はい", act.slice(2));
+  else {
+    if (text) await robo(`「${text}」`, "speech", text);
+    checkStop();
+    if (act.startsWith("m:")) await robo(actName, "move", act.slice(2));
+    if (act.startsWith("d:")) await robo(actName + "（ダンス）", "dance", act.slice(2));
+  }
+}
+// アイボがおすわりしているか（再生のはじめにアイボにたずね、姿勢の欄と「顔を洗う」で変わる）
+let sitting = false;
+async function askSitting() {
+  if (!TOKEN || !DEVICE_ID) return false;
+  statusBox.innerHTML = "🐕 アイボの姿勢をたずねています…";
+  try {
+    const res = await fetch(`${BASE}/devices/${DEVICE_ID}/capabilities/posture_status/execute`, { method: "POST", headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" }, body: "{}" });
+    const id = res.ok && (await res.json()).executionId;
+    for (let i = 0; id && i < 6; i++) {
+      await sleep(1500); checkStop();
+      const r2 = await fetch(`${BASE}/executions/${id}`, { headers: { "Authorization": `Bearer ${TOKEN}` } });
+      if (!r2.ok) continue;
+      const j = await r2.json();
+      if (j.status === "SUCCEEDED") return ((j.result || {}).posture_status || {}).body === "sit";
+      if (j.status === "FAILED") return false;
+    }
+  } catch (e) { if (e instanceof Stopped) throw e; }
+  return false;
+}
+// アイボ：声の前に「姿勢」（終わるまで待つ）。
+// 声を鳴らしながら「（顔を洗う）→ 口（自動）→ 頭・顔・耳 → 気持ち → 首」を、間を空けずに予約して送る。
+// アイボの動き（口パク・口を開ける・気持ちなど）は、している間は首が上がって人を見上げ、終わったあとに「下を向く」を送ると
+// ロボホンに目線が戻る（2026-10-31 実物で確かめた）。なので首は最後。口を動かさない場面だけは、話す前に首を下げて見つめる。
+// 顔を洗う（伏せて前を見る）は姿勢が変わるので、いちばん先にする。声のあとに「鳴き声 → おもちゃ」
+async function aiboPart(s, sc, practice) {
+  const lines = linesOf(sc.atext);
+  if (sc.apose === "s:sit") sitting = true;
+  if (sc.apose === "s:stand" || sc.apose === POSE_DOWN || sc.aface === "p:washFace") sitting = false;
+  const neck = sc.aneck || (sitting ? NECK_DOWN : "");  // おすわりのときは自動で下を向く
+  const talk = lines.length || sc.voice;
+  const wash = sc.aface === "p:washFace", face = wash ? "" : sc.aface;
+  const mouth = talk ? mouthOf(sc.amouth) : "", lift = mouth || face || sc.afeel;  // lift = 首が上がる動きがある
+  const during = [[wash ? sc.aface : "", A_FACE], [lift ? "" : neck, A_NECK], [mouth, [["p:playBiting", "口パク（じゃれてかむ）"], ...A_MOUTH]],
+                  [face, A_FACE], [sc.afeel, A_FEEL], [lift ? neck : "", A_NECK]].filter(x => x[0]);
+  const after = [[sc.acry, A_CRY], [sc.atoy, A_TOY]].filter(x => x[0]);
+  if (!talk && !sc.apose && !during.length && !after.length) return;
+  if (sc.apose && !practice) { await aiboStep(sc.apose, nameOf(A_POSE, sc.apose)); checkStop(); }
+  const moves = practice ? Promise.resolve() : aiboSteps(during);
+  telop.innerHTML = `<small>【場面 ${s + 1}】🐕 アイボ</small>` + (lines.join("<br>") || (sc.voice ? "🎵" : ""));
+  if (sc.voice) await playBlob(sc.voice); else if (lines.length) await tabletSay(lines.join("　"), 1.6);
+  await moves; checkStop();
+  if (practice) return;
+  await aiboSteps(after);
+}
+async function playScenes(list) {
+  myPlay = ++playing;
+  const practice = document.getElementById("practice").checked;
+  try {
+    // 指示待ちは、このページを開いてから1回だけ送る（「ふだんに戻す」を押したら、次の再生でまた送る）
+    if (!practice && document.getElementById("stay").checked && !stayDone) { await aibo("指示待ちにする", "set_mode", { ModeName: "DEVELOPMENT" }); stayDone = true; checkStop(); }
+    sitting = practice ? false : await askSitting();
+    for (const s of list) {
+      const sc = CUR.scenes[s];
+      statusBox.innerHTML = `🎬 場面 ${s + 1}`;
+      await robohonPart(s, sc, practice); checkStop();
+      await aiboPart(s, sc, practice); checkStop();
+    }
+    statusBox.innerHTML = "🎉 おしまい"; telop.innerHTML = "";
+  } catch (e) {
+    if (e instanceof Stopped) return;
+    statusBox.innerHTML = "⚠️ " + e.message;
+  }
+}
+const playOne = s => playScenes([s]);
+const playAll = () => playScenes([...Array(SCENES).keys()]);
+async function stopAll() {
+  playing++;
+  if (nowAudio) nowAudio.pause();
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  telop.innerHTML = "";
+  if (!document.getElementById("practice").checked) { try { await robot("reset_all", 3000); } catch (e) {} }
+  statusBox.innerHTML = "⏹ 止めました（アイボは今している動きが終わると止まります）";
+}
+
+// ---------- はじめ ----------
+(async () => {
+  try {
+    DB = await openDb();
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+    const names = await tx("readonly", st => st.getAllKeys()), last = load("skit_last");
+    if (names.includes(last)) await openScript(last);
+    else if (names.length) await openScript(names[0]);
+    else await tx("readwrite", st => st.put(CUR));
+    show(); await refreshList();
+  } catch (e) { document.getElementById("saveMsg").innerHTML = '<span class="ng">このブラウザでは台本を保存できません（開いている間だけ使えます）</span>'; show(); }
+})();
+</script>
+</body>
+</html>
