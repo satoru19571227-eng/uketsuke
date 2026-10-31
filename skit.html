@@ -120,7 +120,7 @@ const R_ACT = [
   ["", [["", "動作なし"]]],
   ["🗣️ しゃべりながら", [["g:拍手", "拍手"], ["g:右側を案内する", "紹介（右側を案内）"], ["g:左側を案内する", "紹介（左側を案内）"], ["g:よろしくね", "よろしくね"], ["g:おはよう", "おはよう"], ["g:ただいま", "ただいま"], ["g:おかえり", "おかえり"], ["g:おやすみ", "おやすみ"], ["g:乾杯！", "乾杯！"], ["g:大きく右手を上げる", "大きく右手を上げる"], ["g:大きく左手を上げる", "大きく左手を上げる"], ["g:小さく右手を上げる", "小さく右手を上げる"], ["g:小さく左手を上げる", "小さく左手を上げる"]]],
   ["🤚 しゃべったあと", ["バンザイ", "バイバイ", "お辞儀", "敬礼", "えへへ", "拍手", "飛行機", "出発進行", "ゴリラ", "スキー", "テニス", "バイオリン", "歯磨き", "お茶を飲む", "食べる", "満腹", "サッカー", "バスケ", "スクワット", "ボールをける", "準備運動", "早歩き", "逆立ち"].map(n => ["m:" + n, n])],
-  ["💃 ダンス（しゃべったあと）", [[24, "ロボホン体操"], [28, "ロボホン音頭"], [61, "ロボホンマーチ"], [73, "ロボホンソング"], [97, "ロボホンルンバ"], [122, "ロボホンサンバ"], [3, "阿波踊り"], [50, "ソーラン節"], [100, "炭坑節"], [39, "ラジオ体操"], [38, "森のくまさん"], [33, "うさぎのダンス"], [15, "フラダンス"], [34, "コサックダンス"], [98, "ジェンカ"], [86, "オクラホマミキサー"], [36, "チアリーディング1"], [16, "野球応援"], [4, "エアギター1"], [48, "忍者のダンス"], [95, "おすもうのダンス"], [119, "バースデーソング"]].map(([n, t]) => ["d:" + n, t])],
+  ["💃 ダンス（しゃべったあと）", [[24, "ロボホン体操"], [28, "ロボホン音頭"], [61, "ロボホンマーチ"], [73, "ロボホンソング"], [97, "ロボホンルンバ"], [122, "ロボホンサンバ"], [3, "阿波踊り"], [50, "ソーラン節"], [100, "炭坑節"], [39, "ラジオ体操"], [38, "森のくまさん"], [33, "うさぎのダンス"], [15, "フラダンス"], [34, "コサックダンス"], [98, "ジェンカ"], [86, "オクラホマミキサー"], [77, "花のワルツ（アイボも踊れる）"], [36, "チアリーディング1"], [16, "野球応援"], [4, "エアギター1"], [48, "忍者のダンス"], [95, "おすもうのダンス"], [119, "バースデーソング"]].map(([n, t]) => ["d:" + n, t])],
 ];
 // アイボ：姿勢（声の前にする）。伏せ = 顔を洗う（伏せて前を見る）。リモコンに伏せがないので代わりに使う。
 // 伏せると頭がロボホンの目の高さに近く、伏せたまま口パクすると話している感じが出る（2026-10-31 実物で確かめた）
@@ -139,6 +139,8 @@ const A_NECK = [["", "首はそのまま"], [NECK_DOWN, "下を向く（ロボ�
 const A_FACE = [["", "頭・顔・耳はそのまま"], ...[["顔を洗う（伏せて前を見る）", "washFace"], ["口を開ける", "openMouth"], ["見回す", "lookAroundHead"], ["のぞきこむ", "lookOver"], ["あごを引く", "drawInOnesChin"], ["耳を動かす", "wiggleEar"], ["においをかぐ", "sniff"], ["下をかぐ", "sniffDown"], ["上をかぐ", "sniffUp"], ["キス", "kiss"], ["ヘディング", "heading"]].map(([t, c]) => ["p:" + c, t])];
 const A_CRY = [["", "鳴かない"], ...[["ワン（太い声）", "woof"], ["ワンと鳴く", "bark"], ["キャンキャン", "yap"], ["クーン", "whine"], ["くしゃみ", "sneeze"], ["あくび", "yawn"], ["ハッとする", "gasp"], ["寝言", "sleepTalking"], ["歌う", "sing"]].map(([t, c]) => ["p:" + c, t])];
 const A_FEEL = [["", "気持ち・反応なし"], ...[["うなずく", "nodHead"], ["首を横に振る", "shakeHead"], ["首をかしげる", "curious"], ["賛成", "agree"], ["大よろこび", "overJoyed"], ["しょんぼり", "bad"], ["気づく", "perceive"], ["少しびっくり", "startledLittle"], ["びっくり", "startled"], ["うれしい", "happyOrHot"], ["こんにちは大好き", "helloIloveYou"], ["なかよくしよう", "imFriendly"], ["ていねいにあいさつ", "friendlyPolite"], ["おねだり", "prettyPlease"], ["そわそわ", "restless"], ["ぶるっと震える", "shudder"], ["待っている", "waiting"], ["準備オーケー", "ready"], ["くつろぐ", "relax"], ["バンザイ", "handsUp"], ["ダンス", "dance"], ["ハイタッチ", "highFive"], ["おしりを振る", "shakeHipsBehind"], ["伸び", "stretch"]].map(([t, c]) => ["p:" + c, t])];
+// アイボ：ふるまい（歌とダンス、play_trick）。ロボホンのダンスと同じ場面で選ぶと、セリフのあと一緒に踊る
+const A_TRICK = [["", "ふるまいなし"], ["k:waltzOfTheFlowers", "花のワルツ"], ["k:happyBirthday", "ハッピーバースデー"], ["k:ifYoureHappyAndYouKnowIt", "幸せなら手をたたこう"], ["k:londonBridgeIsFallingDown", "ロンドン橋落ちた"], ["k:radioExerciseNo1", "ラジオ体操第一"], ["k:veryLovelyAibo", "とってもかわいいaibo"], ["k:aiboSquat", "スクワットしよう"]];
 const A_TOY = [["", "おもちゃなし"], ["t:find_object:pinkball", "ピンクボールを探す"], ["t:approach_object:pinkball", "ピンクボールに近づく（歩く・テーブル注意）"], ["t:chase_object:pinkball", "ピンクボールを見続ける（10秒）"], ["t:find_object:aibone", "アイボーンを探す"], ["t:approach_object:aibone", "アイボーンに近づく（歩く・テーブル注意）"], ["t:chase_object:aibone", "アイボーンを見続ける（10秒）"], ["t:find_object:dice", "サイコロを探す"], ["t:approach_object:dice", "サイコロに近づく（歩く・テーブル注意）"]];
 
 // ---------- 画面を作る ----------
@@ -174,6 +176,8 @@ for (let s = 0; s < SCENES; s++) {
         <label>気持ち・反応<select data-k="afeel" data-s="${s}">${options(A_FEEL)}</select></label>
       </div>
       <label>おもちゃで遊ぶ<select data-k="atoy" data-s="${s}">${options(A_TOY)}</select></label>
+      <label>ふるまい（歌とダンス）<select data-k="atrick" data-s="${s}">${options(A_TRICK)}</select></label>
+      <p class="note" style="margin:0">ロボホンの動作でダンスを選ぶと、セリフのあとにロボホンとアイボが一緒に踊ります。</p>
     </div>`;
   box.appendChild(c);
 }
@@ -197,7 +201,7 @@ function tx(mode, fn) {
 }
 function emptyScript(name) {
   // 新しい台本は、場面1でアイボが伏せてから始まる
-  return { name, scenes: Array.from({ length: SCENES }, (_, i) => ({ rtext: "", rhead: "", ract: "", atext: "", apose: i === 0 ? POSE_DOWN : "", amouth: "", aneck: "", aface: "", acry: "", afeel: "", atoy: "", voice: null, vname: "" })) };
+  return { name, scenes: Array.from({ length: SCENES }, (_, i) => ({ rtext: "", rhead: "", ract: "", atext: "", apose: i === 0 ? POSE_DOWN : "", amouth: "", aneck: "", aface: "", acry: "", afeel: "", atoy: "", atrick: "", voice: null, vname: "" })) };
 }
 let CUR = emptyScript("寸劇1");
 function show() {
@@ -426,6 +430,7 @@ function aiboStep(v, label, queue = false) {
   const [kind, a, b] = v.split(":");
   if (kind === "h") return aibo(label, "move_head", { Azimuth: Number(a), Elevation: Number(b), Velocity: 40 }, queue);
   if (kind === "s") return aibo(label, "change_posture", { FinalPosture: a }, queue);
+  if (kind === "k") return aibo(label, "play_trick", { TrickName: a }, queue);
   if (kind === "p") return aibo(label, "play_motion", { Category: a, Mode: "NONE" }, queue);
   if (kind === "t") return aibo(label, a, a === "chase_object" ? { TargetType: b, ChasingDurationMsec: 10000 } : { TargetType: b }, queue);
 }
@@ -444,7 +449,8 @@ async function aiboSteps(steps) {
     }
     await aiboStep(v, name);
   }
-  if (lastId) await waitAibo(lastId, 15);
+  // ふるまい（歌とダンス）は長いので、最大3分待つ
+  if (lastId) await waitAibo(lastId, steps.some(([v]) => v.startsWith("k:")) ? 90 : 15);
 }
 
 // 指示待ち（DEVELOPMENT）= 自分から歩き回らない。テーブルの上の寸劇用。ふだん（NORMAL）で解除
@@ -476,8 +482,18 @@ async function robohonPart(s, sc, practice) {
     if (text) await robo(`「${text}」`, "speech", text);
     checkStop();
     if (act.startsWith("m:")) await robo(actName, "move", act.slice(2));
-    if (act.startsWith("d:")) await robo(actName + "（ダンス）", "dance", act.slice(2));
+    if (act.startsWith("d:") && !together(sc)) await robo(actName + "（ダンス）", "dance", act.slice(2));
   }
+}
+// ロボホンのダンスとアイボのふるまいが同じ場面にあるときは、2人のセリフのあとに一緒に踊る
+const together = sc => sc.ract.startsWith("d:") && !!sc.atrick;
+async function danceTogether(s, sc) {
+  telop.innerHTML = `<small>【場面 ${s + 1}】🤖🐕 いっしょに</small>` + nameOf(R_ACT, sc.ract);
+  // アイボはクラウドを通るので数秒遅れる。先にアイボへ送ってから、ロボホンを始める
+  const id = await aiboStep(sc.atrick, nameOf(A_TRICK, sc.atrick), true);
+  checkStop();
+  await robo(nameOf(R_ACT, sc.ract) + "（ダンス・アイボと一緒）", "dance", sc.ract.slice(2));
+  if (id && id !== "noqueue") await waitAibo(id, 90);
 }
 // アイボがおすわりしているか（再生のはじめにアイボにたずね、姿勢の欄と「顔を洗う」で変わる）
 let sitting = false;
@@ -513,7 +529,7 @@ async function aiboPart(s, sc, practice) {
   const mouth = talk ? mouthOf(sc.amouth) : "", lift = mouth || face || sc.afeel;  // lift = 首が上がる動きがある
   const during = [[wash ? sc.aface : "", A_FACE], [lift ? "" : neck, A_NECK], [mouth, [["p:playBiting", "口パク（じゃれてかむ）"], ...A_MOUTH]],
                   [face, A_FACE], [sc.afeel, A_FEEL], [lift ? neck : "", A_NECK]].filter(x => x[0]);
-  const after = [[sc.acry, A_CRY], [sc.atoy, A_TOY]].filter(x => x[0]);
+  const after = [[sc.acry, A_CRY], [sc.atoy, A_TOY], [together(sc) ? "" : sc.atrick, A_TRICK]].filter(x => x[0]);
   if (!talk && !sc.apose && !during.length && !after.length) return;
   if (sc.apose && !practice) { await aiboStep(sc.apose, nameOf(A_POSE, sc.apose)); checkStop(); }
   const moves = practice ? Promise.resolve() : aiboSteps(during);
@@ -535,6 +551,7 @@ async function playScenes(list) {
       statusBox.innerHTML = `🎬 場面 ${s + 1}`;
       await robohonPart(s, sc, practice); checkStop();
       await aiboPart(s, sc, practice); checkStop();
+      if (together(sc) && !practice) { await danceTogether(s, sc); checkStop(); }
     }
     statusBox.innerHTML = "🎉 おしまい"; telop.innerHTML = "";
   } catch (e) {
