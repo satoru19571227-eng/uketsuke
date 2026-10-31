@@ -496,8 +496,24 @@ async function danceTogether(s, sc) {
   const id = await aiboStep(sc.atrick, nameOf(A_TRICK, sc.atrick), true);
   checkStop();
   const [kind, what] = [sc.ract.slice(0, 1), sc.ract.slice(2)];
+  const ok = id && id !== "noqueue";
+  if (kind === "m") {
+    // スクワットなどの動きは1回が短い（約2.5秒）ので、アイボが終わるまで繰り返す（最大3分）
+    // 2026-10-31：ロボホンが1回で止まり、アイボは何回もしていた（ユーザーが見た）
+    for (let i = 1, t0 = Date.now(); Date.now() - t0 < 180000; i++) {
+      await robo(`${nameOf(R_ACT, sc.ract)}（アイボと一緒・${i}回目）`, "move", what);
+      checkStop();
+      if (!ok || await aiboFinished(id)) break;
+    }
+    return;
+  }
   await robo(nameOf(R_ACT, sc.ract) + "（アイボと一緒）", { d: "dance", u: "sing" }[kind] || "move", what);
-  if (id && id !== "noqueue") await waitAibo(id, 90);
+  if (ok) await waitAibo(id, 90);
+}
+// アイボの命令が終わったかを1回だけたずねる
+async function aiboFinished(id) {
+  try { const r = await fetch(`${BASE}/executions/${id}`, { headers: { "Authorization": `Bearer ${TOKEN}` } }); if (r.ok) return ["SUCCEEDED", "FAILED"].includes((await r.json()).status); } catch (e) {}
+  return false;
 }
 // アイボがおすわりしているか（再生のはじめにアイボにたずね、姿勢の欄と「顔を洗う」で変わる）
 let sitting = false;
