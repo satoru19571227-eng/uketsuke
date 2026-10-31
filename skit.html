@@ -156,7 +156,7 @@ for (let s = 0; s < SCENES; s++) {
   const c = document.createElement("div"); c.className = "card";
   c.innerHTML = `
     <div class="scene-head"><h2>【場面 ${s + 1}】</h2><button class="small" onclick="playOne(${s})">▶ この場面を再生</button></div>
-    <label>話し方<select data-k="chorus" data-s="${s}"><option value="">ロボホン → アイボの順番に話す</option><option value="1">2人で同時に言う（声をそろえる。最後のあいさつなど）</option></select></label>
+    <label>話し方<select data-k="chorus" data-s="${s}"><option value="">ロボホン → アイボの順番に話す</option><option value="2">アイボ → ロボホンの順番に話す</option><option value="1">2人で同時に言う（声をそろえる。最後のあいさつなど）</option></select></label>
     <div class="robo"><h3>🤖 ロボホン</h3>
       <textarea data-k="rtext" data-s="${s}" rows="3" placeholder="セリフ（3行まで）"></textarea>
       <div class="voice"><button class="mic" onclick="listen(this, 'rtext', ${s})">🎤 声で入れる</button><span>話した言葉が1行ずつ入ります</span></div>
@@ -580,6 +580,9 @@ async function playScenes(list) {
       if (sc.chorus === "1") {
         await aiboPart(s, sc, practice, () => robohonPart(s, sc, practice, "talk")); checkStop();
         await robohonPart(s, sc, practice, "act"); checkStop();
+      } else if (sc.chorus === "2") {  // アイボが先に話す
+        await aiboPart(s, sc, practice); checkStop();
+        await robohonPart(s, sc, practice); checkStop();
       } else {
         await robohonPart(s, sc, practice); checkStop();
         await aiboPart(s, sc, practice); checkStop();
