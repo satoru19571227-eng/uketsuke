@@ -156,6 +156,7 @@ for (let s = 0; s < SCENES; s++) {
   const c = document.createElement("div"); c.className = "card";
   c.innerHTML = `
     <div class="scene-head"><h2>【場面 ${s + 1}】</h2><button class="small" onclick="playOne(${s})">▶ この場面を再生</button></div>
+    <label>話し方<select data-k="chorus" data-s="${s}"><option value="">ロボホン → アイボの順番に話す</option><option value="1">2人で同時に言う（声をそろえる。最後のあいさつなど）</option></select></label>
     <div class="robo"><h3>🤖 ロボホン</h3>
       <textarea data-k="rtext" data-s="${s}" rows="3" placeholder="セリフ（3行まで）"></textarea>
       <div class="voice"><button class="mic" onclick="listen(this, 'rtext', ${s})">🎤 声で入れる</button><span>話した言葉が1行ずつ入ります</span></div>
@@ -202,7 +203,7 @@ function tx(mode, fn) {
 }
 function emptyScript(name) {
   // 新しい台本は、場面1でアイボが伏せてから始まる
-  return { name, scenes: Array.from({ length: SCENES }, (_, i) => ({ rtext: "", rhead: "", ract: "", atext: "", apose: i === 0 ? POSE_DOWN : "", amouth: "", aneck: "", aface: "", acry: "", afeel: "", atoy: "", atrick: "", voice: null, vname: "" })) };
+  return { name, scenes: Array.from({ length: SCENES }, (_, i) => ({ rtext: "", rhead: "", ract: "", atext: "", apose: i === 0 ? POSE_DOWN : "", amouth: "", aneck: "", aface: "", acry: "", afeel: "", atoy: "", atrick: "", chorus: "", voice: null, vname: "" })) };
 }
 let CUR = emptyScript("寸劇1");
 function show() {
@@ -470,23 +471,26 @@ let myPlay = 0;
 function checkStop() { if (myPlay !== playing) throw new Stopped(); }
 const nameOf = (list, v) => { for (const x of list) { if (Array.isArray(x[1])) { const f = x[1].find(y => y[0] === v); if (f) return f[1]; } else if (x[0] === v) return x[1]; } return v; };
 
-async function robohonPart(s, sc, practice) {
+// phase = "all"：頭 → セリフ → 動作 / "talk"：頭とセリフだけ / "act"：セリフのあとの動作だけ
+// （2人で同時に言う場面は、アイボの声と同時に "talk"、言い終わってから "act"）
+async function robohonPart(s, sc, practice, phase = "all") {
   const lines = linesOf(sc.rtext), text = lines.join("　");
   if (!text && !sc.rhead && !sc.ract) return;
-  telop.innerHTML = `<small>【場面 ${s + 1}】🤖 ロボホン</small>` + lines.join("<br>");
-  if (practice) { if (text) await tabletSay(text, 1.3); checkStop(); return; }
-  if (sc.rhead) await robo(nameOf(R_HEAD, sc.rhead), "move", sc.rhead.slice(2));
-  checkStop();
   const act = sc.ract, actName = nameOf(R_ACT, act);
-  if (act.startsWith("g:")) await robo(`「${text || "はい"}」（${actName}）`, "speakmove", text || "はい", act.slice(2));
-  else {
-    if (text) await robo(`「${text}」`, "speech", text);
+  if (phase !== "act") {
+    if (phase === "all") telop.innerHTML = `<small>【場面 ${s + 1}】🤖 ロボホン</small>` + lines.join("<br>");
+    // 練習で2人同時のときは、タブレットの声が重なるのでアイボの声だけにする
+    if (practice) { if (text && phase === "all") await tabletSay(text, 1.3); checkStop(); return; }
+    if (sc.rhead) await robo(nameOf(R_HEAD, sc.rhead), "move", sc.rhead.slice(2));
     checkStop();
-    if (together(sc)) return;
-    if (act.startsWith("m:")) await robo(actName, "move", act.slice(2));
-    if (act.startsWith("u:")) await robo(actName + "（歌）", "sing", act.slice(2));
-    if (act.startsWith("d:")) await robo(actName + "（ダンス）", "dance", act.slice(2));
+    if (act.startsWith("g:")) await robo(`「${text || "はい"}」（${actName}）`, "speakmove", text || "はい", act.slice(2));
+    else if (text) await robo(`「${text}」`, "speech", text);
+    checkStop();
   }
+  if (phase === "talk" || practice || act.startsWith("g:") || together(sc)) return;
+  if (act.startsWith("m:")) await robo(actName, "move", act.slice(2));
+  if (act.startsWith("u:")) await robo(actName + "（歌）", "sing", act.slice(2));
+  if (act.startsWith("d:")) await robo(actName + "（ダンス）", "dance", act.slice(2));
 }
 // ロボホンのダンス・歌（またはスクワット）とアイボのふるまいが同じ場面にあるときは、2人のセリフのあとに一緒に踊る
 const together = sc => (sc.ract.startsWith("d:") || sc.ract.startsWith("u:") || sc.ract === "m:スクワット") && !!sc.atrick;
@@ -539,7 +543,8 @@ async function askSitting() {
 // アイボの動き（口パク・口を開ける・気持ちなど）は、している間は首が上がって人を見上げ、終わったあとに「下を向く」を送ると
 // ロボホンに目線が戻る（2026-10-31 実物で確かめた）。なので首は最後。口を動かさない場面だけは、話す前に首を下げて見つめる。
 // 顔を洗う（伏せて前を見る）は姿勢が変わるので、いちばん先にする。声のあとに「鳴き声 → おもちゃ」
-async function aiboPart(s, sc, practice) {
+// withRobo があれば（2人で同時に言う場面）、アイボの声と同時にロボホンにも話させる
+async function aiboPart(s, sc, practice, withRobo = null) {
   const lines = linesOf(sc.atext);
   if (sc.apose === "s:sit") sitting = true;
   if (sc.apose === "s:stand" || sc.apose === POSE_DOWN || sc.aface === "p:washFace") sitting = false;
@@ -550,11 +555,14 @@ async function aiboPart(s, sc, practice) {
   const during = [[wash ? sc.aface : "", A_FACE], [lift ? "" : neck, A_NECK], [mouth, [["p:playBiting", "口パク（じゃれてかむ）"], ...A_MOUTH]],
                   [face, A_FACE], [sc.afeel, A_FEEL], [lift ? neck : "", A_NECK]].filter(x => x[0]);
   const after = [[sc.acry, A_CRY], [sc.atoy, A_TOY], [together(sc) ? "" : sc.atrick, A_TRICK]].filter(x => x[0]);
-  if (!talk && !sc.apose && !during.length && !after.length) return;
+  if (!talk && !sc.apose && !during.length && !after.length) { if (withRobo) await withRobo(); return; }
   if (sc.apose && !practice) { await aiboStep(sc.apose, nameOf(A_POSE, sc.apose)); checkStop(); }
   const moves = practice ? Promise.resolve() : aiboSteps(during);
-  telop.innerHTML = `<small>【場面 ${s + 1}】🐕 アイボ</small>` + (lines.join("<br>") || (sc.voice ? "🎵" : ""));
-  if (sc.voice) await playBlob(sc.voice); else if (lines.length) await tabletSay(lines.join("　"), 1.6);
+  telop.innerHTML = withRobo
+    ? `<small>【場面 ${s + 1}】🤖🐕 2人で</small>` + (lines.join("<br>") || linesOf(sc.rtext).join("<br>"))
+    : `<small>【場面 ${s + 1}】🐕 アイボ</small>` + (lines.join("<br>") || (sc.voice ? "🎵" : ""));
+  const voice = sc.voice ? playBlob(sc.voice) : lines.length ? tabletSay(lines.join("　"), 1.6) : Promise.resolve();
+  await Promise.all([voice, withRobo ? withRobo() : null]);
   await moves; checkStop();
   if (practice) return;
   await aiboSteps(after);
@@ -569,8 +577,13 @@ async function playScenes(list) {
     for (const s of list) {
       const sc = CUR.scenes[s];
       statusBox.innerHTML = `🎬 場面 ${s + 1}`;
-      await robohonPart(s, sc, practice); checkStop();
-      await aiboPart(s, sc, practice); checkStop();
+      if (sc.chorus === "1") {
+        await aiboPart(s, sc, practice, () => robohonPart(s, sc, practice, "talk")); checkStop();
+        await robohonPart(s, sc, practice, "act"); checkStop();
+      } else {
+        await robohonPart(s, sc, practice); checkStop();
+        await aiboPart(s, sc, practice); checkStop();
+      }
       if (together(sc) && !practice) { await danceTogether(s, sc); checkStop(); }
     }
     statusBox.innerHTML = "🎉 おしまい"; telop.innerHTML = "";
